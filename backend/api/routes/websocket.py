@@ -129,8 +129,10 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
 
 async def _get_recent_events(pool, hours: int = 24) -> dict:
     """Get recent events from all tables for WebSocket sync."""
+    from datetime import timedelta
+
     result = {}
-    interval = f"{hours} hours"
+    interval = timedelta(hours=hours)
 
     queries = {
         "seismic": (
