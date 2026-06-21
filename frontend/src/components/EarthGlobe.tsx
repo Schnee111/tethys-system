@@ -11,30 +11,6 @@ function getColor(mag: number): string {
   return '#64748b';
 }
 
-// Lighthouse marker: thin line + glowing sphere on top
-function createLighthouse(d: any): THREE.Object3D {
-  const group = new THREE.Group();
-  const color = new THREE.Color(d.color);
-  const height = (d.event?.magnitude || 2) * 0.8 + 1;
-
-  // Thin pillar line
-  const lineGeo = new THREE.CylinderGeometry(0.003, 0.003, height, 4);
-  const lineMat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.7 });
-  const line = new THREE.Mesh(lineGeo, lineMat);
-  line.position.y = height / 2;
-  group.add(line);
-
-  // Glowing sphere on top
-  const sphereSize = Math.max(0.08, (d.event?.magnitude || 2) * 0.025);
-  const sphereGeo = new THREE.SphereGeometry(sphereSize, 12, 12);
-  const sphereMat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.95 });
-  const sphere = new THREE.Mesh(sphereGeo, sphereMat);
-  sphere.position.y = height;
-  group.add(sphere);
-
-  return group;
-}
-
 export function EarthGlobe() {
   const globeRef = useRef<any>(null);
   const { events } = useDataStore();
@@ -53,35 +29,18 @@ export function EarthGlobe() {
     globe.controls().autoRotateSpeed = 0.2;
   }, []);
 
-  const points = events.map((e) => ({
+  // Lighthouse objects: thin line + sphere on top
+  const objects = events.map((e) => ({
     lat: e.latitude,
     lng: e.longitude,
-    altitude: 0.01,
-    size: 0.1,
+    alt: 0.01,
     color: getColor(e.magnitude || 2),
+    magnitude: e.magnitude || 2,
+    label: `M${e.magnitude?.toFixed(1)} — ${e.location}\nDepth: ${e.depth_km?.toFixed(1) || '?'}km`,
     event: e,
-    label: `<div style="
-      background: rgba(10,10,15,0.95);
-      border: 1px solid rgba(196,163,90,0.3);
-      border-radius: 8px;
-      padding: 10px 14px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 11px;
-      color: #e0e6ed;
-      line-height: 1.6;
-      white-space: nowrap;
-    ">
-      <div style="font-weight:600;color:#c4a35a;margin-bottom:4px;">
-        M${e.magnitude?.toFixed(1)} — ${e.location}
-      </div>
-      <div style="color:#999;font-size:10px;">
-        Depth: ${e.depth_km?.toFixed(1) || '?'}km · ${e.domain}
-      </div>
-    </div>`,
   }));
 
   return (
-    // @ts-expect-error — pointThreeObject exists but types are outdated
     <Globe
       ref={globeRef}
       width={size.w}
@@ -92,16 +51,36 @@ export function EarthGlobe() {
       showAtmosphere={true}
       atmosphereColor="#38bdf8"
       atmosphereAltitude={0.2}
-      pointsData={points}
-      pointLat="lat"
-      pointLng="lng"
-      pointAltitude="altitude"
-      pointColor="color"
-      pointRadius="size"
-      pointResolution={6}
-      pointsMerge={false}
-      pointLabel="label"
-      pointThreeObject={createLighthouse}
+      // Custom 3D objects layer
+      objectsData={objects}
+      objectLat="lat"
+      objectLng="lng"
+      objectAltitude="alt"
+      objectLabel="label"
+      objectThreeObject={(d: any) => {
+        const group = new THREE.Group();
+        const color = new THREE.Color(d.color);
+        const height = d.magnitude * 0.8 + 1;
+        const sphereSize = Math.max(0.12, d.magnitude * 0.04);
+
+        // Thin pillar
+        const pillar = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.004, 0.004, height, 4),
+          new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.7 })
+        );
+        pillar.position.y = height / 2;
+        group.add(pillar);
+
+        // Glowing sphere on top
+        const sphere = new THREE.Mesh(
+          new THREE.SphereGeometry(sphereSize, 16, 16),
+          new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.95 })
+        );
+        sphere.position.y = height;
+        group.add(sphere);
+
+        return group;
+      }}
     />
   );
 }
