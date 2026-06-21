@@ -1,6 +1,7 @@
 import { useDataStore } from '../stores/dataStore';
 import { useGlobeStore } from '../stores/globeStore';
 import { motion, AnimatePresence } from 'motion/react';
+import { X } from 'lucide-react';
 
 const DOMAIN_COLORS: Record<string, string> = {
   seismic: '#f87171',
@@ -54,8 +55,8 @@ export function LiveFeed() {
                 }}>
                   {selectedEvent.domain}
                 </span>
-                <button onClick={() => setSelectedEvent(null)} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#a1a1aa', background: 'none', border: 'none', cursor: 'pointer' }}>
-                  [CLOSE]
+                <button onClick={() => setSelectedEvent(null)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#a1a1aa', background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
+                  <X style={{ width: 12, height: 12 }} />
                 </button>
               </div>
               <h4 style={{ fontSize: 12, fontWeight: 600, letterSpacing: '-0.01em', color: '#fff', margin: '0 0 4px 0' }}>
@@ -122,6 +123,8 @@ export function LiveFeed() {
                   marginBottom: 8,
                 }}
                 onClick={() => setSelectedEvent(event)}
+                onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
+                onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.background = 'transparent'; }}
               >
                 <div style={{
                   position: 'absolute', left: 0, top: 8, bottom: 8, width: 2, borderRadius: 1,
@@ -159,11 +162,11 @@ export function LiveFeed() {
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
           <span>SOLAR FLUX</span>
-          <span style={{ color: '#f59e0b' }}>—</span>
+          <span style={{ color: '#52525b' }}>NO DATA</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span>CRUSTAL PRESSURE</span>
-          <span style={{ color: '#ef4444' }}>—</span>
+          <span style={{ color: '#52525b' }}>NO DATA</span>
         </div>
       </div>
     </>

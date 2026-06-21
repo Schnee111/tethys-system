@@ -1,10 +1,12 @@
 import { useDataStore } from '../stores/dataStore';
 
 export function ActivityCard() {
-  const { activity, isLoading } = useDataStore();
+  const { activity, isLoading, anomalies } = useDataStore();
   const level = activity?.activity_level || 'unknown';
   const score = activity?.activity_score ?? 0;
   const confidence = activity?.confidence ?? 0;
+  const isNoData = score === 0 && confidence < 0.1;
+  const anomalyCount = activity?.active_anomalies ?? anomalies.length;
 
   return (
     <div style={{
@@ -21,21 +23,21 @@ export function ActivityCard() {
         <span style={{ fontSize: 9, letterSpacing: '0.1em', color: 'rgba(161,161,170,0.5)', textTransform: 'uppercase', fontWeight: 600 }}>
           ACTIVITY INDEX
         </span>
-        <span style={{ color: 'rgba(52,211,153,0.8)', fontWeight: 700, fontFamily: 'var(--font-mono)', fontSize: 9 }}>
-          {isLoading ? '...' : level.toUpperCase()}
+        <span style={{ color: isNoData ? '#71717a' : 'rgba(52,211,153,0.8)', fontWeight: 700, fontFamily: 'var(--font-mono)', fontSize: 9 }}>
+          {isLoading ? '...' : isNoData ? 'NO DATA' : level.toUpperCase()}
         </span>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: 9, marginBottom: 3 }}>
         <span>SCORE</span>
-        <span style={{ color: '#d4d4d8', fontWeight: 700 }}>{score.toFixed(2)} / 1.00</span>
+        <span style={{ color: isNoData ? '#71717a' : '#d4d4d8', fontWeight: 700 }}>{score.toFixed(2)} / 1.00</span>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: 9, marginBottom: 3 }}>
         <span>CONFIDENCE</span>
-        <span style={{ color: '#d4d4d8', fontWeight: 700 }}>{(confidence * 100).toFixed(0)}%</span>
+        <span style={{ color: isNoData ? '#71717a' : confidence < 0.2 ? '#fbbf24' : '#d4d4d8', fontWeight: 700 }}>{isNoData ? 'N/A' : confidence < 0.2 ? 'LOW' : `${(confidence * 100).toFixed(0)}%`}</span>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: 9 }}>
         <span>ANOMALIES</span>
-        <span style={{ color: '#d4d4d8', fontWeight: 700 }}>{activity?.active_anomalies ?? 0}</span>
+        <span style={{ color: isNoData ? '#71717a' : '#d4d4d8', fontWeight: 700 }}>{anomalyCount}</span>
       </div>
     </div>
   );
