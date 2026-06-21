@@ -1,0 +1,8 @@
+{
+  "name": "Tethys Planetary Intelligence",
+  "description": "A dark, atmospheric cinematic monitoring dashboard for global seismic, solar, and atmospheric anomalies, powered by Gemini AI planetary synthesis.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
