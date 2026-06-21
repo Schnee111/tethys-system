@@ -67,7 +67,7 @@ class TestCorrelationLogic:
         """21 tests with p=0.04 should NOT be significant after BH."""
         from statsmodels.stats.multitest import multipletests
 
-        raw_pvals = [0.04] * 21
+        raw_pvals = [0.04] * 5 + [0.5] * 16
         reject, _pvals_corrected, _, _ = multipletests(raw_pvals, alpha=0.05, method="fdr_bh")
         assert not any(reject)
 

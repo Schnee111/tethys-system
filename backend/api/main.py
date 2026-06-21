@@ -10,6 +10,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from backend.api.routes.analysis import router as analysis_router
 from backend.api.routes.events import router as events_router
 from backend.api.routes.websocket import broadcast_event
 from backend.api.routes.websocket import router as ws_router
@@ -70,6 +71,7 @@ app.add_middleware(
 # Include routers
 app.include_router(events_router)
 app.include_router(ws_router)
+app.include_router(analysis_router)
 
 
 @app.get("/api/v1/status")

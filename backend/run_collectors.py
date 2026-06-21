@@ -11,6 +11,7 @@ that double API calls and cause database deadlocks.
 import asyncio
 import logging
 
+from backend.analysis.scheduler import analysis_scheduler
 from backend.collectors.atmospheric import AtmosphericCollector
 from backend.collectors.donki import DONKICollector
 from backend.collectors.goes_flux import GOESFluxCollector
@@ -44,8 +45,9 @@ async def main() -> None:
         VolcanicCollector(pool),
     ]
 
-    logger.info(f"Starting {len(collectors)} collectors...")
+    logger.info(f"Starting {len(collectors)} collectors + analysis scheduler...")
     tasks = [asyncio.create_task(c.run()) for c in collectors]
+    tasks.append(asyncio.create_task(analysis_scheduler(pool)))
 
     try:
         await asyncio.gather(*tasks)
