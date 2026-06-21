@@ -137,6 +137,63 @@ CREATE TABLE IF NOT EXISTS raw_ingestion (
     parse_error   TEXT,
     PRIMARY KEY (time, source, endpoint)
 );
+
+-- ═══════════════════════════════════════════════════════════
+-- PHASE 2 TABLES — Intelligence Engine
+-- ═══════════════════════════════════════════════════════════
+
+-- Anomaly detection results
+CREATE TABLE IF NOT EXISTS anomalies (
+    time          TIMESTAMPTZ NOT NULL,
+    anomaly_id    TEXT NOT NULL,
+    domain        TEXT NOT NULL,
+    metric        TEXT NOT NULL,
+    value         REAL NOT NULL,
+    z_score       REAL,
+    threshold     REAL,
+    severity      TEXT NOT NULL,
+    description   TEXT,
+    raw_data      JSONB,
+    PRIMARY KEY (time, anomaly_id)
+);
+
+-- Cross-domain correlation results
+CREATE TABLE IF NOT EXISTS correlations (
+    time              TIMESTAMPTZ NOT NULL,
+    correlation_id    TEXT NOT NULL,
+    domain_a          TEXT NOT NULL,
+    metric_a          TEXT NOT NULL,
+    domain_b          TEXT NOT NULL,
+    metric_b          TEXT NOT NULL,
+    window_hours      INTEGER NOT NULL,
+    lag_hours         INTEGER DEFAULT 0,
+    pearson_r         REAL,
+    spearman_rho      REAL,
+    p_value           REAL,
+    p_value_corrected REAL,
+    fdr_method        TEXT,
+    sample_size       INTEGER,
+    is_significant    BOOLEAN,
+    description       TEXT,
+    PRIMARY KEY (time, correlation_id)
+);
+
+-- Composite activity assessments
+CREATE TABLE IF NOT EXISTS activity_assessments (
+    time              TIMESTAMPTZ NOT NULL,
+    assessment_id     TEXT NOT NULL,
+    activity_level    TEXT NOT NULL,
+    activity_score    REAL NOT NULL,
+    confidence        REAL,
+    coverage          TEXT,
+    score_breakdown   JSONB,
+    active_anomalies  INTEGER,
+    active_correlations INTEGER,
+    domains_affected  TEXT[],
+    summary           TEXT,
+    details           JSONB,
+    PRIMARY KEY (time, assessment_id)
+);
 """
 
 HYPERTABLES_SQL = """
@@ -149,6 +206,9 @@ SELECT create_hypertable('atmospheric_data', 'time', if_not_exists => TRUE);
 SELECT create_hypertable('volcanic_events', 'time', if_not_exists => TRUE);
 SELECT create_hypertable('collector_status', 'time', if_not_exists => TRUE);
 SELECT create_hypertable('raw_ingestion', 'time', if_not_exists => TRUE);
+SELECT create_hypertable('anomalies', 'time', if_not_exists => TRUE);
+SELECT create_hypertable('correlations', 'time', if_not_exists => TRUE);
+SELECT create_hypertable('activity_assessments', 'time', if_not_exists => TRUE);
 """
 
 INDEXES_SQL = """
@@ -161,6 +221,9 @@ CREATE INDEX IF NOT EXISTS idx_space_weather_type ON space_weather_events (event
 CREATE INDEX IF NOT EXISTS idx_atmospheric_location ON atmospheric_data (location_name, time DESC);
 CREATE INDEX IF NOT EXISTS idx_atmospheric_category ON atmospheric_data (category, time DESC);
 CREATE INDEX IF NOT EXISTS idx_atmospheric_coords ON atmospheric_data (latitude, longitude);
+CREATE INDEX IF NOT EXISTS idx_anomalies_domain ON anomalies (domain, time DESC);
+CREATE INDEX IF NOT EXISTS idx_anomalies_severity ON anomalies (severity, time DESC);
+CREATE INDEX IF NOT EXISTS idx_correlations_significant ON correlations (is_significant, time DESC);
 """
 
 CONTINUOUS_AGGREGATES_SQL = """
