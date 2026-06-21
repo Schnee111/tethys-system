@@ -14,17 +14,15 @@ export function CategoryFilter({ activeCategories, onToggle }: CategoryFilterPro
 
   return (
     <nav style={{
-      position: 'fixed',
-      bottom: 48,
-      left: 48,
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
       zIndex: 40,
-      background: 'rgba(255,255,255,0.06)',
-      backdropFilter: 'blur(16px)',
-      borderRadius: 9999,
-      padding: '10px 20px',
       display: 'flex',
       alignItems: 'center',
-      gap: 24,
+      gap: 16,
+      paddingBottom: 12,
       userSelect: 'none',
     }}>
       {categories.map((cat) => {

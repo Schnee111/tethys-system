@@ -93,6 +93,7 @@ export default function App() {
 
         {/* Left panel */}
         <aside style={{ position: 'absolute', left: 48, top: 112, bottom: 112, width: 320, display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto', pointerEvents: 'auto' }}>
+          <CategoryFilter activeCategories={activeCategories} onToggle={toggleCategory} />
           <ActivityCard />
           <AnomalyPanel />
           <SensorsGrid />
@@ -102,11 +103,6 @@ export default function App() {
         <aside style={{ position: 'absolute', right: 48, top: 112, bottom: 112, width: 320, display: 'flex', flexDirection: 'column', gap: 16, padding: 20, borderRadius: 16, ...GLASS, pointerEvents: 'auto' }}>
           <LiveFeed />
         </aside>
-
-        {/* Category filter — bottom left */}
-        <div style={{ pointerEvents: 'auto' }}>
-          <CategoryFilter activeCategories={activeCategories} onToggle={toggleCategory} />
-        </div>
 
         {/* Timeline — bottom center */}
         <div style={{ pointerEvents: 'auto' }}>
