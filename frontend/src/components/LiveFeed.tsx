@@ -47,7 +47,7 @@ export function LiveFeed() {
             const isSelected = selectedEvent?.event_id === event.event_id;
             return (
               <div
-                key={event.event_id}
+                key={`${event.event_id}-${event.time}`}
                 className={`group relative p-3 rounded-xl transition-all duration-300 cursor-pointer text-left ${
                   isSelected ? 'bg-white/[0.06] shadow-lg shadow-black/20' : 'bg-transparent hover:bg-white/[0.02]'
                 }`}
