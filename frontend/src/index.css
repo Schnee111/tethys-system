@@ -2,7 +2,7 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Geist", "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
@@ -42,20 +42,19 @@ input[type="range"]::-webkit-slider-thumb:hover {
   transform: scale(1.35);
 }
 
-/* Subtle starfield animation */
-@keyframes twinkle-slow {
-  0%, 100% { opacity: 0.15; }
-  50% { opacity: 1; }
+/* Starfield animations */
+@keyframes twinkle {
+  0%, 100% { opacity: 0.15; transform: scale(0.85); }
+  50% { opacity: 1; transform: scale(1.15); }
 }
 
-.animate-twinkle-slow {
-  animation: twinkle-slow 5s ease-in-out infinite;
-}
+.animate-twinkle-slow { animation: twinkle 5s ease-in-out infinite; }
+.animate-twinkle-mid { animation: twinkle 3.5s ease-in-out infinite; }
+.animate-twinkle-fast { animation: twinkle 2s ease-in-out infinite; }
 
-.animate-twinkle-mid {
-  animation: twinkle-slow 3.5s ease-in-out infinite;
+/* Spin animation for compass */
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
-
-.animate-twinkle-fast {
-  animation: twinkle-slow 2s ease-in-out infinite;
-}
+.animate-spin-slow { animation: spin-slow 20s linear infinite; }
