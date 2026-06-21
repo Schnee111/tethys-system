@@ -7,13 +7,27 @@ interface CategoryFilterProps {
 
 export function CategoryFilter({ activeCategories, onToggle }: CategoryFilterProps) {
   const categories = [
-    { key: 'seismic', label: 'Seismic', icon: Activity, color: 'text-rose-400' },
-    { key: 'solar', label: 'Solar', icon: Zap, color: 'text-amber-400' },
-    { key: 'atmospheric', label: 'Atmospheric', icon: Wind, color: 'text-sky-400' },
+    { key: 'seismic', label: 'Seismic', icon: Activity, color: '#f87171' },
+    { key: 'solar', label: 'Solar', icon: Zap, color: '#fbbf24' },
+    { key: 'atmospheric', label: 'Atmospheric', icon: Wind, color: '#60a5fa' },
   ];
 
   return (
-    <nav className="fixed bottom-12 left-12 z-40 bg-white/[0.04] backdrop-blur-3xl rounded-full px-6 py-3 flex items-center gap-8 shadow-2xl shadow-black/50 select-none">
+    <nav style={{
+      position: 'fixed',
+      bottom: 48,
+      left: 48,
+      zIndex: 40,
+      background: 'rgba(255,255,255,0.04)',
+      backdropFilter: 'blur(64px)',
+      borderRadius: 9999,
+      padding: '12px 24px',
+      display: 'flex',
+      alignItems: 'center',
+      gap: 32,
+      boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
+      userSelect: 'none',
+    }}>
       {categories.map((cat) => {
         const isActive = activeCategories.has(cat.key);
         const Icon = cat.icon;
@@ -21,16 +35,21 @@ export function CategoryFilter({ activeCategories, onToggle }: CategoryFilterPro
           <button
             key={cat.key}
             onClick={() => onToggle(cat.key)}
-            className={`flex flex-col items-center gap-1 group cursor-pointer transition-all duration-300 ${
-              isActive ? 'opacity-100 scale-105' : 'opacity-35 hover:opacity-75'
-            }`}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 4,
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              opacity: isActive ? 1 : 0.35,
+              transform: isActive ? 'scale(1.05)' : 'scale(1)',
+              transition: 'all 0.3s',
+            }}
           >
-            <Icon
-              className={`w-4 h-4 group-hover:scale-110 transition-transform ${
-                isActive ? cat.color : 'text-zinc-400'
-              }`}
-            />
-            <span className="font-mono text-[9px] tracking-widest text-zinc-300 uppercase font-bold">
+            <Icon style={{ width: 16, height: 16, color: isActive ? cat.color : '#71717a' }} />
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.1em', color: '#d4d4d8', textTransform: 'uppercase', fontWeight: 700 }}>
               {cat.label}
             </span>
           </button>

@@ -14,35 +14,97 @@ export function TimelineSlider() {
   };
 
   return (
-    <div className="fixed bottom-12 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 bg-white/[0.04] backdrop-blur-3xl rounded-full px-6 py-3 shadow-2xl shadow-black/50 w-[460px] max-w-full transition-all duration-300">
+    <div style={{
+      position: 'fixed',
+      bottom: 48,
+      left: '50%',
+      transform: 'translateX(-50%)',
+      zIndex: 50,
+      display: 'flex',
+      alignItems: 'center',
+      gap: 16,
+      background: 'rgba(255,255,255,0.04)',
+      backdropFilter: 'blur(64px)',
+      borderRadius: 9999,
+      padding: '12px 24px',
+      boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
+      width: 460,
+      maxWidth: '100%',
+    }}>
+      {/* Play/Pause */}
       <button
         onClick={() => setLive(!isLive)}
-        className={`w-7 h-7 rounded-full flex items-center justify-center cursor-pointer transition-all duration-300 ${isLive ? 'bg-emerald-500/20 text-emerald-300' : 'bg-white/5 text-zinc-400 hover:text-white hover:bg-white/10'}`}
+        style={{
+          width: 28,
+          height: 28,
+          borderRadius: '50%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          border: 'none',
+          background: isLive ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.05)',
+          color: isLive ? '#6ee7b7' : '#a1a1aa',
+          transition: 'all 0.3s',
+        }}
       >
-        {isLive ? <Pause className="w-3 h-3 fill-current" /> : <Play className="w-3 h-3 fill-current translate-x-0.5" />}
+        {isLive ? <Pause style={{ width: 12, height: 12 }} /> : <Play style={{ width: 12, height: 12 }} />}
       </button>
+
+      {/* Reset */}
       <button
         onClick={() => { setLive(true); setTimelinePercent(100); }}
-        className="w-7 h-7 rounded-full flex items-center justify-center bg-white/5 text-zinc-400 hover:text-white hover:bg-white/10 cursor-pointer transition-all"
+        style={{
+          width: 28,
+          height: 28,
+          borderRadius: '50%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'rgba(255,255,255,0.05)',
+          color: '#a1a1aa',
+          border: 'none',
+          cursor: 'pointer',
+        }}
       >
-        <RotateCcw className="w-3 h-3" />
+        <RotateCcw style={{ width: 12, height: 12 }} />
       </button>
-      <span className="w-px h-4 bg-white/5" />
-      <div className="flex-1 flex items-center gap-3 font-mono text-[11px] font-semibold text-zinc-500">
-        <span className="text-[10px] text-zinc-400/50 hover:text-white transition-colors cursor-pointer select-none" onClick={() => setTimelinePercent(0)}>
+
+      <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.05)' }} />
+
+      {/* Slider */}
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 12, fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 600, color: '#71717a' }}>
+        <span style={{ fontSize: 10, color: 'rgba(161,161,170,0.5)', cursor: 'pointer' }} onClick={() => setTimelinePercent(0)}>
           -12H
         </span>
-        <div className="relative flex-1 group">
+        <div style={{ flex: 1, position: 'relative' }}>
           <input
-            type="range" min={0} max={100} value={timelinePercent}
+            type="range"
+            min={0}
+            max={100}
+            value={timelinePercent}
             onChange={(e) => { setLive(false); setTimelinePercent(Number(e.target.value)); }}
-            className="w-full h-[2px] bg-white/10 rounded-lg appearance-none cursor-ew-resize accent-white group-hover:bg-white/20 transition-all outline-none"
-            style={{ background: `linear-gradient(to right, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.4) ${timelinePercent}%, rgba(255,255,255,0.08) ${timelinePercent}%, rgba(255,255,255,0.08) 100%)` }}
+            style={{
+              width: '100%',
+              height: 2,
+              background: `linear-gradient(to right, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.4) ${timelinePercent}%, rgba(255,255,255,0.08) ${timelinePercent}%, rgba(255,255,255,0.08) 100%)`,
+              borderRadius: 1,
+              cursor: 'ew-resize',
+              outline: 'none',
+              appearance: 'none',
+              WebkitAppearance: 'none',
+            }}
           />
         </div>
         <span
           onClick={() => { setLive(true); setTimelinePercent(100); }}
-          className={`text-[10px] tracking-widest uppercase transition-colors cursor-pointer select-none ${timelinePercent === 100 ? 'text-emerald-400' : 'text-zinc-400/50 hover:text-white'}`}
+          style={{
+            fontSize: 10,
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
+            cursor: 'pointer',
+            color: timelinePercent === 100 ? '#4ade80' : 'rgba(161,161,170,0.5)',
+          }}
         >
           {getTimeLabel()}
         </span>

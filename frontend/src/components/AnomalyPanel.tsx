@@ -11,28 +11,49 @@ export function AnomalyPanel() {
   const { anomalies, isLoading } = useDataStore();
 
   return (
-    <div className="p-3.5 rounded-2xl bg-white/[0.035] backdrop-blur-3xl text-left font-sans shadow-2xl shadow-black/40 flex-1 min-h-0">
-      <div className="flex justify-between items-center mb-3">
-        <span className="font-sans text-[9px] text-zinc-400/50 uppercase tracking-wider font-semibold">
+    <div style={{
+      padding: '14px',
+      borderRadius: '16px',
+      background: 'rgba(255,255,255,0.035)',
+      backdropFilter: 'blur(64px)',
+      textAlign: 'left',
+      boxShadow: '0 25px 50px -12px rgba(0,0,0,0.4)',
+      flex: '1 1 0',
+      minHeight: 0,
+      overflow: 'hidden',
+      display: 'flex',
+      flexDirection: 'column',
+    }}>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <span style={{ fontSize: 9, letterSpacing: '0.1em', color: 'rgba(161,161,170,0.5)', textTransform: 'uppercase', fontWeight: 600 }}>
           ANOMALIES ({anomalies.length})
         </span>
-        <div className="w-1.5 h-1.5 rounded-full bg-amber-400/80 animate-pulse" />
+        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(251,191,36,0.8)', animation: 'pulse 2s infinite' }} />
       </div>
-      <div className="space-y-2 overflow-y-auto scrollbar-none max-h-64" style={{ scrollbarWidth: 'none' }}>
+
+      {/* List */}
+      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
         {isLoading ? (
-          <div className="text-[10px] text-zinc-500 font-mono">Loading...</div>
+          <div style={{ fontSize: 10, color: '#71717a', fontFamily: 'var(--font-mono)' }}>Loading...</div>
         ) : anomalies.length === 0 ? (
-          <div className="text-[10px] text-zinc-500 font-mono">No anomalies detected</div>
+          <div style={{ fontSize: 10, color: '#71717a', fontFamily: 'var(--font-mono)' }}>No anomalies detected</div>
         ) : (
           anomalies.slice(0, 15).map((a) => (
-            <div key={a.anomaly_id} className="flex items-start gap-2 py-1.5">
-              <div className="w-1 h-1 rounded-full mt-1.5 shrink-0" style={{ backgroundColor: SEVERITY_COLORS[a.severity] || '#64748b' }} />
-              <div className="flex-1 min-w-0">
-                <div className="flex justify-between items-center">
-                  <span className="font-mono text-[9px] text-zinc-400/70 uppercase tracking-wider">{a.domain}</span>
-                  <span className="font-mono text-[9px] text-zinc-500">z={a.z_score?.toFixed(1)}</span>
+            <div key={a.anomaly_id} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '6px 0' }}>
+              <div style={{ width: 4, height: 4, borderRadius: '50%', marginTop: 6, flexShrink: 0, background: SEVERITY_COLORS[a.severity] || '#64748b' }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'rgba(161,161,170,0.7)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    {a.domain}
+                  </span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#71717a' }}>
+                    z={a.z_score?.toFixed(1)}
+                  </span>
                 </div>
-                <p className="text-[10px] text-zinc-300 font-sans truncate">{a.description}</p>
+                <p style={{ fontSize: 10, color: '#d4d4d8', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {a.description}
+                </p>
               </div>
             </div>
           ))

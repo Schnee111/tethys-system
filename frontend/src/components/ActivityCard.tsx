@@ -7,22 +7,36 @@ export function ActivityCard() {
   const confidence = activity?.confidence ?? 0;
 
   return (
-    <div className="p-3.5 rounded-2xl bg-white/[0.035] backdrop-blur-3xl text-left font-sans text-[10px] text-zinc-500 space-y-1.5 shadow-2xl shadow-black/40 shrink-0">
-      <div className="flex justify-between items-center">
-        <span className="font-sans text-[9px] text-zinc-400/50 uppercase tracking-wider font-semibold">ACTIVITY INDEX</span>
-        <span className="text-emerald-400/80 font-bold font-mono text-[9px]">{isLoading ? '...' : level.toUpperCase()}</span>
+    <div style={{
+      padding: '14px',
+      borderRadius: '16px',
+      background: 'rgba(255,255,255,0.035)',
+      backdropFilter: 'blur(64px)',
+      textAlign: 'left',
+      fontSize: 10,
+      color: '#71717a',
+      boxShadow: '0 25px 50px -12px rgba(0,0,0,0.4)',
+      flexShrink: 0,
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+        <span style={{ fontSize: 9, letterSpacing: '0.1em', color: 'rgba(161,161,170,0.5)', textTransform: 'uppercase', fontWeight: 600 }}>
+          ACTIVITY INDEX
+        </span>
+        <span style={{ color: 'rgba(52,211,153,0.8)', fontWeight: 700, fontFamily: 'var(--font-mono)', fontSize: 9 }}>
+          {isLoading ? '...' : level.toUpperCase()}
+        </span>
       </div>
-      <div className="flex justify-between font-mono text-[9px]">
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: 9, marginBottom: 3 }}>
         <span>SCORE</span>
-        <span className="text-zinc-300 font-bold">{score.toFixed(2)} / 1.00</span>
+        <span style={{ color: '#d4d4d8', fontWeight: 700 }}>{score.toFixed(2)} / 1.00</span>
       </div>
-      <div className="flex justify-between font-mono text-[9px]">
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: 9, marginBottom: 3 }}>
         <span>CONFIDENCE</span>
-        <span className="text-zinc-300 font-bold">{(confidence * 100).toFixed(0)}%</span>
+        <span style={{ color: '#d4d4d8', fontWeight: 700 }}>{(confidence * 100).toFixed(0)}%</span>
       </div>
-      <div className="flex justify-between font-mono text-[9px]">
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: 9 }}>
         <span>ANOMALIES</span>
-        <span className="text-zinc-300 font-bold">{activity?.active_anomalies ?? 0}</span>
+        <span style={{ color: '#d4d4d8', fontWeight: 700 }}>{activity?.active_anomalies ?? 0}</span>
       </div>
     </div>
   );
