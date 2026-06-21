@@ -21,11 +21,10 @@ export function CategoryFilter({ activeCategories, onToggle }: CategoryFilterPro
       background: 'rgba(255,255,255,0.06)',
       backdropFilter: 'blur(16px)',
       borderRadius: 9999,
-      padding: '12px 24px',
+      padding: '10px 20px',
       display: 'flex',
       alignItems: 'center',
-      gap: 32,
-      boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
+      gap: 24,
       userSelect: 'none',
     }}>
       {categories.map((cat) => {
@@ -37,25 +36,25 @@ export function CategoryFilter({ activeCategories, onToggle }: CategoryFilterPro
             onClick={() => onToggle(cat.key)}
             style={{
               display: 'flex',
-              flexDirection: 'column',
               alignItems: 'center',
-              gap: 4,
-              background: isActive ? `${cat.color}18` : 'transparent',
-              boxShadow: isActive ? `0 0 20px ${cat.color}40, inset 0 0 12px ${cat.color}15` : 'none',
-              borderRadius: 6,
-              padding: '6px 12px',
+              gap: 8,
+              background: 'none',
               border: 'none',
-              borderBottomWidth: 2,
-              borderBottomStyle: 'solid',
-              borderBottomColor: isActive ? cat.color : 'transparent',
               cursor: 'pointer',
               opacity: isActive ? 1 : 0.3,
-              transform: isActive ? 'scale(1.05)' : 'scale(1)',
-              transition: 'all 0.3s ease',
+              transition: 'opacity 0.2s',
+              padding: 0,
             }}
           >
-            <Icon style={{ width: 16, height: 16, color: isActive ? cat.color : '#52525b' }} />
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.1em', color: isActive ? '#e4e4e7' : '#71717a', textTransform: 'uppercase', fontWeight: 700 }}>
+            <Icon style={{ width: 14, height: 14, color: isActive ? cat.color : '#52525b' }} />
+            <span style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: 9,
+              letterSpacing: '0.1em',
+              color: isActive ? '#e4e4e7' : '#71717a',
+              textTransform: 'uppercase',
+              fontWeight: 600,
+            }}>
               {cat.label}
             </span>
           </button>
