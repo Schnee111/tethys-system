@@ -73,7 +73,7 @@ export default function App() {
         </header>
 
         {/* HUD — top right */}
-        <div style={{ position: 'absolute', top: 32, right: 48, display: 'flex', alignItems: 'center', gap: 24, padding: '4px 24px', borderRadius: 9999, background: 'rgba(255,255,255,0.035)', backdropFilter: 'blur(64px)', pointerEvents: 'auto' }}>
+        <div style={{ position: 'absolute', top: 32, right: 48, display: 'flex', alignItems: 'center', gap: 24, padding: '4px 24px', borderRadius: 9999, background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(16px)', pointerEvents: 'auto' }}>
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.05em', color: '#71717a', textTransform: 'uppercase' }}>
             OPERATOR: DAFFA
           </span>
@@ -98,7 +98,7 @@ export default function App() {
         </aside>
 
         {/* Right panel */}
-        <aside style={{ position: 'absolute', right: 48, top: 112, bottom: 112, width: 320, display: 'flex', flexDirection: 'column', gap: 16, padding: 20, borderRadius: 16, background: 'rgba(255,255,255,0.035)', backdropFilter: 'blur(64px)', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.4)', pointerEvents: 'auto' }}>
+        <aside style={{ position: 'absolute', right: 48, top: 112, bottom: 112, width: 320, display: 'flex', flexDirection: 'column', gap: 16, padding: 20, borderRadius: 16, background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(16px)', boxShadow: '0 8px 32px rgba(0,0,0,0.3)', pointerEvents: 'auto' }}>
           <LiveFeed />
         </aside>
 
