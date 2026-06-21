@@ -1,0 +1,120 @@
+"""Tethys — FastAPI Application.
+
+Main entry point for the Tethys API server.
+Uses lifespan context manager (not deprecated on_event).
+"""
+
+import time
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from backend.config import DATABASE_URL, TETHYS_ENV
+from backend.db.connection import close_pool, get_pool, init_pool
+from backend.db.schema import create_tables
+
+START_TIME = time.time()
+TETHYS_VERSION = "0.1.0"
+
+# CORS origins — specific origins only (wildcard + credentials violates CORS spec)
+DEV_ORIGINS = [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:3000",
+]
+
+PROD_ORIGINS = [
+    "https://tethys.pages.dev",
+]
+
+ALLOWED_ORIGINS = PROD_ORIGINS if TETHYS_ENV == "production" else DEV_ORIGINS
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Startup and shutdown lifecycle."""
+    # Startup
+    pool = await init_pool(DATABASE_URL)
+    await create_tables(pool)
+
+    yield
+
+    # Shutdown
+    await close_pool()
+
+
+app = FastAPI(
+    title="Tethys — Planetary Intelligence System",
+    version=TETHYS_VERSION,
+    lifespan=lifespan,
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.get("/api/v1/status")
+async def get_status():
+    """System health and collector status."""
+    pool = await get_pool()
+
+    async with pool.acquire() as conn:
+        # Get collector statuses (latest per collector)
+        rows = await conn.fetch("""
+            SELECT DISTINCT ON (collector)
+                collector, status, records_count, latency_ms, error_message, time
+            FROM collector_status
+            ORDER BY collector, time DESC
+        """)
+
+        # Get total record counts per table
+        table_counts = {}
+        for table in [
+            "seismic_events",
+            "solar_wind",
+            "goes_flux",
+            "space_weather_events",
+            "atmospheric_data",
+            "volcanic_events",
+        ]:
+            count = await conn.fetchval(f"SELECT COUNT(*) FROM {table}")  # noqa: S608
+            table_counts[table] = count
+
+        # Get database size
+        db_size = await conn.fetchval("SELECT pg_size_pretty(pg_database_size(current_database()))")
+
+    collectors = {}
+    for row in rows:
+        collectors[row["collector"]] = {
+            "status": row["status"],
+            "last_poll": row["time"].isoformat() if row["time"] else None,
+            "records": row["records_count"],
+            "latency_ms": round(row["latency_ms"], 1) if row["latency_ms"] else None,
+            "error": row["error_message"],
+        }
+
+    return {
+        "status": "operational",
+        "version": TETHYS_VERSION,
+        "uptime_seconds": round(time.time() - START_TIME),
+        "environment": TETHYS_ENV,
+        "collectors": collectors,
+        "database": {
+            "tables": table_counts,
+            "total_records": sum(table_counts.values()),
+            "size": db_size,
+        },
+    }
+
+
+@app.get("/api/v1/health")
+async def health_check():
+    """Simple health check for load balancers."""
+    return {"status": "ok"}
