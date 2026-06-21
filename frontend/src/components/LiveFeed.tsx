@@ -1,6 +1,5 @@
 import { useDataStore } from '../stores/dataStore';
 import { useGlobeStore } from '../stores/globeStore';
-import { useGlobeStore } from '../stores/globeStore';
 import { motion, AnimatePresence } from 'motion/react';
 
 const DOMAIN_COLORS: Record<string, string> = {
