@@ -91,11 +91,9 @@ export function TimelineSlider() {
               height: 2,
               background: `linear-gradient(to right, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.4) ${timelinePercent}%, rgba(255,255,255,0.08) ${timelinePercent}%, rgba(255,255,255,0.08) 100%)`,
               borderRadius: 1,
-              cursor: 'ew-resize',
               outline: 'none',
-              appearance: 'none',
-              WebkitAppearance: 'none',
-              accentColor: '#fff',
+              display: 'block',
+              verticalAlign: 'middle',
             }}
           />
         </div>
