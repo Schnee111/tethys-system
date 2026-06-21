@@ -34,7 +34,7 @@ export function EarthGlobe() {
     lat: e.latitude,
     lng: e.longitude,
     altitude: 0.01 + (e.magnitude || 2) * 0.005,
-    size: 0.06,
+    size: 0.03,
     color: getColor(e.magnitude || 2),
   }));
 
@@ -43,7 +43,7 @@ export function EarthGlobe() {
     lat: e.latitude,
     lng: e.longitude,
     alt: 0.01 + (e.magnitude || 2) * 0.005,
-    size: Math.max(0.15, (e.magnitude || 2) * 0.04),
+    size: Math.max(0.2, (e.magnitude || 2) * 0.06),
     color: getColor(e.magnitude || 2),
     event: e,
     label: `M${e.magnitude?.toFixed(1)} — ${e.location}\nDepth: ${e.depth_km?.toFixed(1) || '?'}km`,
