@@ -3,7 +3,7 @@
 Fetches active volcanic event data from NASA's EONET (Earth Observatory Natural Event Tracker).
 Parses the EONET v3 API response into records for the volcanic_events table.
 
-Source: https://eonet.gsfc.nasa.gov/api/v3/events?category=volcanoes&status=open
+Source: https://eonet.gsfc.nasa.gov/api/v3/events?category=volcanoes
 """
 
 import json
@@ -18,7 +18,7 @@ class VolcanicCollector(BaseCollector):
 
     name = "volcanic"
     poll_interval = 3600  # 1 hour
-    endpoint = "https://eonet.gsfc.nasa.gov/api/v3/events?category=volcanoes&status=open"
+    endpoint = "https://eonet.gsfc.nasa.gov/api/v3/events?category=volcanoes"
     insert_query = """
         INSERT INTO volcanic_events (
             time, event_id, volcano_name, latitude, longitude,
