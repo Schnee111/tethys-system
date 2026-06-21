@@ -1,8 +1,6 @@
 import { useEffect } from 'react';
-import { motion } from 'motion/react';
 import { Wifi, Bell, Settings, User } from 'lucide-react';
 import { useDataStore } from './stores/dataStore';
-import { useGlobeStore } from './stores/globeStore';
 import { api } from './api/client';
 import { EarthGlobe } from './components/Globe/EarthGlobe';
 import { LiveFeed } from './components/Panels/LiveFeed';
@@ -14,7 +12,6 @@ import { Starfield } from './components/Layout/Starfield';
 export default function App() {
   const { setStatus, setEvents, setAnomalies, setActivity, setLoading } = useDataStore();
 
-  // Fetch initial data
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -24,7 +21,6 @@ export default function App() {
           api.getAnomalies({ hours: 24 }),
           api.getActivity(),
         ]);
-
         setStatus(statusData);
         setEvents(seismicData.events || []);
         setAnomalies(anomalyData.anomalies || []);
@@ -35,21 +31,22 @@ export default function App() {
         setLoading(false);
       }
     };
-
     fetchData();
     const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
   }, []);
 
   return (
-    <div
-      className="min-h-screen bg-[#020205] text-zinc-100 flex flex-col justify-between overflow-hidden relative font-sans select-none"
-      id="tethys-root-viewport"
-    >
-      {/* Starfield background */}
-      <Starfield />
+    <div className="min-h-screen bg-[#020205] text-zinc-100 flex flex-col justify-between overflow-hidden relative font-sans select-none">
+      {/* Background: Starfield + Globe (full screen, behind everything) */}
+      <main className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+        <Starfield />
+        <div className="absolute inset-0">
+          <EarthGlobe />
+        </div>
+      </main>
 
-      {/* Floating Header */}
+      {/* Floating Header — Top Left */}
       <header className="fixed top-8 left-12 z-50 flex items-center gap-6">
         <h1 className="font-sans text-2xl font-light tracking-[0.35em] text-white uppercase select-none">
           TETHYS
@@ -62,7 +59,7 @@ export default function App() {
         </div>
       </header>
 
-      {/* Right Action HUD */}
+      {/* Right Action HUD — Top Right */}
       <div className="fixed top-8 right-12 z-50 flex items-center gap-6 text-zinc-400/60 pl-6 pr-2 py-1 rounded-full bg-white/[0.035] backdrop-blur-3xl shadow-2xl shadow-black/40">
         <span className="font-mono text-[10px] tracking-wider text-zinc-500 uppercase mr-1 select-none">
           OPERATOR: DAFFA
@@ -84,30 +81,18 @@ export default function App() {
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden relative z-10" id="tethys-workspace-core">
-        {/* Left Panel */}
-        <aside
-          id="dashboard-telemetry-panel"
-          className="fixed left-12 top-28 bottom-28 z-30 flex flex-col gap-4 w-80 overflow-y-auto scrollbar-none pr-1 transition-all duration-500"
-          style={{ scrollbarWidth: 'none' }}
-        >
-          <ActivityCard />
-          <AnomalyPanel />
-        </aside>
+      {/* Left Panel — Floating over globe */}
+      <aside className="fixed left-12 top-28 bottom-28 z-30 flex flex-col gap-4 w-80 overflow-y-auto scrollbar-none pr-1 transition-all duration-500" style={{ scrollbarWidth: 'none' }}>
+        <ActivityCard />
+        <AnomalyPanel />
+      </aside>
 
-        {/* Center Globe */}
-        <main className="flex-1 relative">
-          <EarthGlobe />
-        </main>
+      {/* Right Panel — Floating over globe */}
+      <aside className="fixed right-12 top-28 bottom-28 z-30 flex flex-col gap-4 w-80 bg-white/[0.035] backdrop-blur-3xl px-5 py-5 rounded-2xl shadow-2xl shadow-black/40 transition-all duration-500">
+        <LiveFeed />
+      </aside>
 
-        {/* Right Panel */}
-        <aside className="fixed right-12 top-28 bottom-28 z-30 flex flex-col gap-4 w-80 bg-white/[0.035] backdrop-blur-3xl px-5 py-5 rounded-2xl shadow-2xl shadow-black/40 transition-all duration-500">
-          <LiveFeed />
-        </aside>
-      </div>
-
-      {/* Timeline */}
+      {/* Timeline — Bottom center */}
       <TimelineSlider />
     </div>
   );
