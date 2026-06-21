@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tethys — System Health</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #0a0e17;
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .header h1 {
+            font-size: 2rem;
+            color: #4fc3f7;
+            letter-spacing: 0.1em;
+        }
+        .header .subtitle {
+            color: #607d8b;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+        .status-bar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            font-size: 1.1rem;
+        }
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .status-dot.ok { background: #4caf50; box-shadow: 0 0 8px #4caf50; }
+        .status-dot.error { background: #f44336; box-shadow: 0 0 8px #f44336; }
+        .status-dot.pending { background: #ff9800; box-shadow: 0 0 8px #ff9800; }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .card {
+            background: #111827;
+            border: 1px solid #1e293b;
+            border-radius: 8px;
+            padding: 1.25rem;
+        }
+        .card h3 {
+            color: #4fc3f7;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 1rem;
+        }
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.4rem 0;
+            border-bottom: 1px solid #1e293b;
+        }
+        .metric:last-child { border-bottom: none; }
+        .metric-label { color: #90a4ae; font-size: 0.85rem; }
+        .metric-value { font-weight: 600; font-size: 0.85rem; }
+        .metric-value.ok { color: #4caf50; }
+        .metric-value.error { color: #f44336; }
+        .metric-value.warn { color: #ff9800; }
+        .db-table {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.3rem 0;
+            font-size: 0.8rem;
+        }
+        .db-table .name { color: #90a4ae; }
+        .db-table .count { color: #e0e0e0; font-variant-numeric: tabular-nums; }
+        .footer {
+            text-align: center;
+            margin-top: 2rem;
+            color: #455a64;
+            font-size: 0.75rem;
+        }
+        .loading {
+            text-align: center;
+            color: #607d8b;
+            padding: 3rem;
+        }
+        .error-msg {
+            text-align: center;
+            color: #f44336;
+            padding: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🌊 TETHYS</h1>
+        <div class="subtitle">Planetary Intelligence System — Health Dashboard</div>
+    </div>
+
+    <div class="status-bar" id="status-bar">
+        <span class="status-dot pending"></span>
+        <span>Loading...</span>
+    </div>
+
+    <div class="grid" id="content">
+        <div class="loading">Connecting to API...</div>
+    </div>
+
+    <div class="footer">
+        Auto-refreshes every 30 seconds &middot; Tethys v0.1.0
+    </div>
+
+    <script>
+        const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            ? `http://${window.location.hostname}:8000`
+            : '';
+
+        async function fetchStatus() {
+            try {
+                const resp = await fetch(`${API_BASE}/api/v1/status`);
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                return await resp.json();
+            } catch (e) {
+                throw new Error(`API unreachable: ${e.message}`);
+            }
+        }
+
+        function formatUptime(seconds) {
+            if (seconds < 60) return `${seconds}s`;
+            if (seconds < 3600) return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            return `${h}h ${m}m`;
+        }
+
+        function renderStatus(data) {
+            // Status bar
+            const statusBar = document.getElementById('status-bar');
+            const isOk = data.status === 'operational';
+            statusBar.innerHTML = `
+                <span class="status-dot ${isOk ? 'ok' : 'error'}"></span>
+                <span>${data.status.toUpperCase()}</span>
+                <span style="color:#607d8b;font-size:0.85rem;margin-left:1rem">
+                    uptime: ${formatUptime(data.uptime_seconds)} &middot; v${data.version}
+                </span>
+            `;
+
+            const content = document.getElementById('content');
+            let html = '';
+
+            // Collectors card
+            html += `<div class="card"><h3>Collectors</h3>`;
+            const collectorNames = Object.keys(data.collectors || {});
+            if (collectorNames.length === 0) {
+                html += `<div class="metric"><span class="metric-label">No collectors running</span></div>`;
+            }
+            for (const [name, info] of Object.entries(data.collectors || {})) {
+                const statusClass = info.status === 'ok' ? 'ok' : info.status === 'error' ? 'error' : 'warn';
+                const lastPoll = info.last_poll ? new Date(info.last_poll).toLocaleTimeString() : 'never';
+                html += `
+                    <div class="metric">
+                        <span class="metric-label">${name}</span>
+                        <span class="metric-value ${statusClass}">
+                            ${info.status} &middot; ${info.records || 0} rec &middot; ${lastPoll}
+                        </span>
+                    </div>`;
+            }
+            html += `</div>`;
+
+            // Database card
+            html += `<div class="card"><h3>Database</h3>`;
+            html += `
+                <div class="metric">
+                    <span class="metric-label">Total Records</span>
+                    <span class="metric-value">${(data.database?.total_records || 0).toLocaleString()}</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Size</span>
+                    <span class="metric-value">${data.database?.size || 'N/A'}</span>
+                </div>`;
+            for (const [table, count] of Object.entries(data.database?.tables || {})) {
+                html += `
+                    <div class="db-table">
+                        <span class="name">${table}</span>
+                        <span class="count">${count.toLocaleString()}</span>
+                    </div>`;
+            }
+            html += `</div>`;
+
+            // Info card
+            html += `<div class="card"><h3>System</h3>`;
+            html += `
+                <div class="metric">
+                    <span class="metric-label">Environment</span>
+                    <span class="metric-value">${data.environment || 'unknown'}</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Version</span>
+                    <span class="metric-value">${data.version || 'N/A'}</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Last Updated</span>
+                    <span class="metric-value">${new Date().toLocaleTimeString()}</span>
+                </div>`;
+            html += `</div>`;
+
+            content.innerHTML = html;
+        }
+
+        function renderError(err) {
+            const statusBar = document.getElementById('status-bar');
+            statusBar.innerHTML = `
+                <span class="status-dot error"></span>
+                <span>CONNECTION FAILED</span>`;
+            document.getElementById('content').innerHTML = `
+                <div class="error-msg">
+                    <p>⚠️ ${err.message}</p>
+                    <p style="margin-top:0.5rem;font-size:0.8rem;color:#607d8b">
+                        Make sure the API server is running on port 8000
+                    </p>
+                </div>`;
+        }
+
+        async function refresh() {
+            try {
+                const data = await fetchStatus();
+                renderStatus(data);
+            } catch (e) {
+                renderError(e);
+            }
+        }
+
+        refresh();
+        setInterval(refresh, 30000);
+    </script>
+</body>
+</html>
