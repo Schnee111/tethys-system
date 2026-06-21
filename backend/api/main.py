@@ -2,8 +2,11 @@
 
 Main entry point for the Tethys API server.
 Uses lifespan context manager (not deprecated on_event).
+Embeds collectors as background tasks for real-time WebSocket broadcasting.
 """
 
+import asyncio
+import logging
 import time
 from contextlib import asynccontextmanager
 
@@ -14,10 +17,18 @@ from backend.api.routes.analysis import router as analysis_router
 from backend.api.routes.events import router as events_router
 from backend.api.routes.websocket import broadcast_event
 from backend.api.routes.websocket import router as ws_router
+from backend.collectors.atmospheric import AtmosphericCollector
 from backend.collectors.base import set_broadcast_callback
+from backend.collectors.donki import DONKICollector
+from backend.collectors.goes_flux import GOESFluxCollector
+from backend.collectors.seismic import SeismicCollector
+from backend.collectors.solar_wind import SolarWindCollector
+from backend.collectors.volcanic import VolcanicCollector
 from backend.config import DATABASE_URL, TETHYS_ENV
 from backend.db.connection import close_pool, get_pool, init_pool
 from backend.db.schema import create_tables
+
+logger = logging.getLogger(__name__)
 
 START_TIME = time.time()
 TETHYS_VERSION = "0.1.0"
@@ -47,9 +58,24 @@ async def lifespan(app: FastAPI):
     # Wire WebSocket broadcast into collectors
     set_broadcast_callback(broadcast_event)
 
+    # Start collectors as background tasks (same process = broadcast works)
+    collectors = [
+        SeismicCollector(pool),
+        SolarWindCollector(pool),
+        GOESFluxCollector(pool),
+        DONKICollector(pool),
+        AtmosphericCollector(pool),
+        VolcanicCollector(pool),
+    ]
+    collector_tasks = [asyncio.create_task(c.run()) for c in collectors]
+    logger.info(f"Started {len(collectors)} collectors in API server process")
+
     yield
 
     # Shutdown
+    for task in collector_tasks:
+        task.cancel()
+    await asyncio.gather(*collector_tasks, return_exceptions=True)
     set_broadcast_callback(None)
     await close_pool()
 
