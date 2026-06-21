@@ -29,15 +29,24 @@ export function EarthGlobe() {
     globe.controls().autoRotateSpeed = 0.2;
   }, []);
 
-  // Lighthouse objects: thin line + sphere on top
-  const objects = events.map((e) => ({
+  // Thin pillar lines (native globe.gl points)
+  const points = events.map((e) => ({
     lat: e.latitude,
     lng: e.longitude,
-    alt: 0.01,
+    altitude: 0.01 + (e.magnitude || 2) * 0.005,
+    size: 0.06,
     color: getColor(e.magnitude || 2),
-    magnitude: e.magnitude || 2,
-    label: `M${e.magnitude?.toFixed(1)} — ${e.location}\nDepth: ${e.depth_km?.toFixed(1) || '?'}km`,
+  }));
+
+  // Glowing spheres on top of pillars
+  const sphereAlt = events.map((e) => ({
+    lat: e.latitude,
+    lng: e.longitude,
+    alt: 0.01 + (e.magnitude || 2) * 0.005,
+    size: Math.max(0.15, (e.magnitude || 2) * 0.04),
+    color: getColor(e.magnitude || 2),
     event: e,
+    label: `M${e.magnitude?.toFixed(1)} — ${e.location}\nDepth: ${e.depth_km?.toFixed(1) || '?'}km`,
   }));
 
   return (
@@ -51,35 +60,31 @@ export function EarthGlobe() {
       showAtmosphere={true}
       atmosphereColor="#38bdf8"
       atmosphereAltitude={0.2}
-      // Custom 3D objects layer
-      objectsData={objects}
+      // Thin pillar lines (native pointsData — keeps original look)
+      pointsData={points}
+      pointLat="lat"
+      pointLng="lng"
+      pointAltitude="altitude"
+      pointColor="color"
+      pointRadius="size"
+      pointResolution={6}
+      pointsMerge={false}
+      // Glowing spheres on top (objectsData layer)
+      objectsData={sphereAlt}
       objectLat="lat"
       objectLng="lng"
       objectAltitude="alt"
       objectLabel="label"
       objectThreeObject={(d: any) => {
-        const group = new THREE.Group();
-        const color = new THREE.Color(d.color);
-        const height = d.magnitude * 0.8 + 1;
-        const sphereSize = Math.max(0.12, d.magnitude * 0.04);
-
-        // Thin pillar
-        const pillar = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.004, 0.004, height, 4),
-          new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.7 })
-        );
-        pillar.position.y = height / 2;
-        group.add(pillar);
-
-        // Glowing sphere on top
         const sphere = new THREE.Mesh(
-          new THREE.SphereGeometry(sphereSize, 16, 16),
-          new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.95 })
+          new THREE.SphereGeometry(d.size, 16, 16),
+          new THREE.MeshBasicMaterial({
+            color: new THREE.Color(d.color),
+            transparent: true,
+            opacity: 0.95,
+          })
         );
-        sphere.position.y = height;
-        group.add(sphere);
-
-        return group;
+        return sphere;
       }}
     />
   );
