@@ -31,6 +31,8 @@ class VolcanicCollector(BaseCollector):
         """Fetch JSON from EONET with explicit Accept header.
 
         EONET returns RSS/XML by default. Must request JSON explicitly.
+        content_type=None disables aiohttp's mime-type check (EONET
+        sometimes returns JSON body with RSS content-type header).
         """
         import aiohttp
 
@@ -43,7 +45,7 @@ class VolcanicCollector(BaseCollector):
             ) as resp,
         ):
             resp.raise_for_status()
-            return await resp.json()
+            return await resp.json(content_type=None)
 
     async def collect(self) -> list[dict[str, Any]]:
         """Fetch volcanic event data from NASA EONET API.
