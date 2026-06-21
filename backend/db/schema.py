@@ -5,7 +5,6 @@ to create tables if they don't exist. TimescaleDB hypertables are
 created with create_hypertable() which is idempotent.
 """
 
-import contextlib
 import logging
 
 import asyncpg
@@ -304,6 +303,8 @@ async def create_tables(pool: asyncpg.Pool) -> None:
     """Create all tables, hypertables, indexes, and continuous aggregates.
 
     Idempotent — safe to call on every startup.
+    Logs warnings for expected "already exists" errors.
+    Raises on unexpected failures.
     """
     async with pool.acquire() as conn:
         # Tables
@@ -313,22 +314,43 @@ async def create_tables(pool: asyncpg.Pool) -> None:
         for stmt in HYPERTABLES_SQL.strip().split("\n"):
             stmt = stmt.strip()
             if stmt and not stmt.startswith("--"):
-                with contextlib.suppress(Exception):
+                try:
                     await conn.execute(stmt)
+                except Exception as e:
+                    if "already a hypertable" in str(e):
+                        logger.debug(f"Hypertable already exists: {stmt[:60]}")
+                    else:
+                        logger.error(f"Failed to create hypertable: {e}")
+                        raise
 
         # Indexes
         await conn.execute(INDEXES_SQL)
 
-        # Continuous aggregates
+        # Continuous aggregates — each one can fail independently
         for stmt in CONTINUOUS_AGGREGATES_SQL.split(";"):
             stmt = stmt.strip()
             if stmt and not stmt.startswith("--"):
-                with contextlib.suppress(Exception):
+                try:
                     await conn.execute(stmt + ";")
+                except Exception as e:
+                    err = str(e)
+                    if "already exists" in err:
+                        logger.debug(f"Aggregate already exists: {stmt[:60]}")
+                    elif "continuous aggregate" in err.lower():
+                        logger.warning(f"Aggregate creation failed (may need manual fix): {e}")
+                    else:
+                        logger.error(f"Failed to create aggregate: {e}")
+                        raise
 
         # Refresh policies
         for stmt in REFRESH_POLICIES_SQL.split(";"):
             stmt = stmt.strip()
             if stmt and not stmt.startswith("--"):
-                with contextlib.suppress(Exception):
+                try:
                     await conn.execute(stmt + ";")
+                except Exception as e:
+                    err = str(e)
+                    if "already exists" in err or "policy" in err.lower():
+                        logger.debug(f"Policy already exists: {stmt[:60]}")
+                    else:
+                        logger.warning(f"Refresh policy error: {e}")
