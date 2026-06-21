@@ -25,7 +25,7 @@ export function EarthGlobe() {
   const points = events.map((e) => ({
     lat: e.latitude,
     lng: e.longitude,
-    size: Math.max(0.02, (e.magnitude || 2) * 0.008),
+    size: Math.max(0.15, (e.magnitude || 2) * 0.06),
     color: getColor(e.magnitude || 2),
     event: e,
   }));
@@ -44,9 +44,11 @@ export function EarthGlobe() {
       pointsData={points}
       pointLat="lat"
       pointLng="lng"
-      pointAltitude={0.005}
+      pointAltitude={0.01}
       pointColor="color"
       pointRadius="size"
+      pointResolution={32}
+      pointsMerge={false}
       onPointClick={(p: any) => setSelectedEvent(p.event)}
     />
   );
