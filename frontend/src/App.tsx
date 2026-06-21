@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Wifi, Bell, Settings, User } from 'lucide-react';
 import { useDataStore } from './stores/dataStore';
 import { api } from './api/client';
@@ -7,10 +7,27 @@ import { EarthGlobe } from './components/EarthGlobe';
 import { LiveFeed } from './components/LiveFeed';
 import { AnomalyPanel } from './components/AnomalyPanel';
 import { ActivityCard } from './components/ActivityCard';
+import { SensorsGrid } from './components/SensorsGrid';
+import { CategoryFilter } from './components/CategoryFilter';
 import { TimelineSlider } from './components/TimelineSlider';
 
 export default function App() {
   const { setStatus, setEvents, setAnomalies, setActivity, setLoading } = useDataStore();
+  const [activeCategories, setActiveCategories] = useState<Set<string>>(
+    new Set(['seismic', 'solar', 'atmospheric'])
+  );
+
+  const toggleCategory = useCallback((category: string) => {
+    setActiveCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(category)) {
+        if (next.size > 1) next.delete(category);
+      } else {
+        next.add(category);
+      }
+      return next;
+    });
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -38,7 +55,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#020205] text-zinc-100 flex flex-col justify-between overflow-hidden relative font-sans select-none">
-      {/* Background layer: starfield + globe */}
+      {/* Background: Starfield + Globe */}
       <main className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
         <div className="absolute inset-0 bg-[#020208]" />
         <Starfield />
@@ -89,6 +106,7 @@ export default function App() {
       <aside className="fixed left-12 top-28 bottom-28 z-30 flex flex-col gap-4 w-80 overflow-y-auto scrollbar-none pr-1 transition-all duration-500" style={{ scrollbarWidth: 'none' }}>
         <ActivityCard />
         <AnomalyPanel />
+        <SensorsGrid />
       </aside>
 
       {/* Right panel — floating */}
@@ -96,7 +114,10 @@ export default function App() {
         <LiveFeed />
       </aside>
 
-      {/* Timeline */}
+      {/* Category filter dock — bottom left */}
+      <CategoryFilter activeCategories={activeCategories} onToggle={toggleCategory} />
+
+      {/* Timeline — bottom center */}
       <TimelineSlider />
     </div>
   );
