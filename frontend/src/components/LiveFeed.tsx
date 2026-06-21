@@ -96,7 +96,7 @@ export function LiveFeed() {
           </div>
         ) : (
           events.slice(0, 50).map((event) => {
-            const isSelected = selectedEvent?.event_id === event.event_id;
+            const isSelected = selectedEvent?.event_id === event.event_id && selectedEvent?.time === event.time;
             return (
               <div
                 key={`${event.event_id}-${event.time}`}
