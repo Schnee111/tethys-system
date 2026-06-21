@@ -1,8 +1,11 @@
+import { useRef, useCallback, useEffect, useState } from 'react';
 import { useGlobeStore } from '../stores/globeStore';
 import { Play, Pause, RotateCcw } from 'lucide-react';
 
 export function TimelineSlider() {
   const { timelinePercent, setTimelinePercent, isLive, setLive } = useGlobeStore();
+  const [dragging, setDragging] = useState(false);
+  const trackRef = useRef<HTMLDivElement>(null);
 
   const getTimeLabel = () => {
     if (timelinePercent === 100) return 'LIVE';
@@ -12,6 +15,42 @@ export function TimelineSlider() {
     const m = Math.round((hoursAgo - h) * 60);
     return `-${h > 0 ? `${h}H` : ''}${m > 0 ? `${m}M` : ''}`;
   };
+
+  const getPercentFromX = useCallback((clientX: number) => {
+    const rect = trackRef.current?.getBoundingClientRect();
+    if (!rect) return 0;
+    const x = clientX - rect.left;
+    return Math.round(Math.max(0, Math.min(100, (x / rect.width) * 100)));
+  }, []);
+
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    e.preventDefault();
+    setDragging(true);
+    setLive(false);
+    setTimelinePercent(getPercentFromX(e.clientX));
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  }, [getPercentFromX, setTimelinePercent, setLive]);
+
+  const handlePointerMove = useCallback((e: React.PointerEvent) => {
+    if (!dragging) return;
+    setTimelinePercent(getPercentFromX(e.clientX));
+  }, [dragging, getPercentFromX, setTimelinePercent]);
+
+  const handlePointerUp = useCallback(() => {
+    setDragging(false);
+  }, []);
+
+  // Keyboard support
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') { setLive(false); setTimelinePercent(Math.max(0, timelinePercent - 1)); }
+      if (e.key === 'ArrowRight') { setLive(false); setTimelinePercent(Math.min(100, timelinePercent + 1)); }
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [timelinePercent, setTimelinePercent, setLive]);
+
+  const fillWidth = `${timelinePercent}%`;
 
   return (
     <div style={{
@@ -76,26 +115,61 @@ export function TimelineSlider() {
 
       {/* Slider */}
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 12, fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 600, color: '#71717a' }}>
-        <span style={{ fontSize: 10, color: 'rgba(161,161,170,0.5)', cursor: 'pointer', userSelect: 'none' }} onClick={() => setTimelinePercent(0)}>
+        <span
+          style={{ fontSize: 10, color: 'rgba(161,161,170,0.5)', cursor: 'pointer', userSelect: 'none' }}
+          onClick={() => { setLive(false); setTimelinePercent(0); }}
+        >
           -12H
         </span>
-        <div style={{ flex: 1, position: 'relative' }}>
-          <input
-            type="range"
-            min={0}
-            max={100}
-            value={timelinePercent}
-            onChange={(e) => { setLive(false); setTimelinePercent(Number(e.target.value)); }}
-            style={{
-              width: '100%',
-              height: 2,
-              background: `linear-gradient(to right, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.4) ${timelinePercent}%, rgba(255,255,255,0.08) ${timelinePercent}%, rgba(255,255,255,0.08) 100%)`,
-              borderRadius: 1,
-              outline: 'none',
-              display: 'block',
-            }}
-          />
+
+        {/* Custom track */}
+        <div
+          ref={trackRef}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          style={{
+            flex: 1,
+            height: 10,
+            display: 'flex',
+            alignItems: 'center',
+            cursor: 'ew-resize',
+            touchAction: 'none',
+            position: 'relative',
+          }}
+        >
+          {/* Track background */}
+          <div style={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            height: 2,
+            borderRadius: 1,
+            background: 'rgba(255,255,255,0.08)',
+          }} />
+          {/* Track fill */}
+          <div style={{
+            position: 'absolute',
+            left: 0,
+            width: fillWidth,
+            height: 2,
+            borderRadius: 1,
+            background: 'rgba(255,255,255,0.4)',
+          }} />
+          {/* Thumb */}
+          <div style={{
+            position: 'absolute',
+            left: fillWidth,
+            width: 10,
+            height: 10,
+            borderRadius: '50%',
+            background: '#fff',
+            transform: 'translate(-50%, 0)',
+            boxShadow: '0 0 6px rgba(255,255,255,0.3)',
+            transition: dragging ? 'none' : 'left 0.1s ease-out',
+          }} />
         </div>
+
         <span
           onClick={() => { setLive(true); setTimelinePercent(100); }}
           style={{
