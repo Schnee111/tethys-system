@@ -3,14 +3,7 @@ import * as THREE from 'three';
 import Globe from 'react-globe.gl';
 import { useDataStore } from '../stores/dataStore';
 import { useGlobeStore } from '../stores/globeStore';
-
-function getColor(mag: number): string {
-  if (mag >= 6) return '#dc2626';
-  if (mag >= 5) return '#ef4444';
-  if (mag >= 4) return '#f59e0b';
-  if (mag >= 3) return '#94a3b8';
-  return '#64748b';
-}
+import { magnitudeColor } from '../utils/colors';
 
 export function EarthGlobe() {
   const globeRef = useRef<any>(null);
@@ -38,7 +31,7 @@ export function EarthGlobe() {
     lng: e.longitude,
     altitude: 0.01 + (e.magnitude || 2) * 0.005,
     size: 0.03,
-    color: getColor(e.magnitude || 2),
+    color: magnitudeColor(e.magnitude || 0.5),
   }));
 
   // Glowing spheres on top of pillars
@@ -47,7 +40,7 @@ export function EarthGlobe() {
     lng: e.longitude,
     alt: 0.01 + (e.magnitude || 2) * 0.005,
     size: Math.max(0.2, (e.magnitude || 2) * 0.06),
-    color: getColor(e.magnitude || 2),
+    color: magnitudeColor(e.magnitude || 0.5),
     event: e,
     label: `M${e.magnitude?.toFixed(1)} — ${e.location}\nDepth: ${e.depth_km?.toFixed(1) || '?'}km`,
   }));

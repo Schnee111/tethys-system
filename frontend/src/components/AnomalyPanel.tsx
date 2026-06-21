@@ -1,16 +1,13 @@
 import { useState } from 'react';
 import { useDataStore } from '../stores/dataStore';
 import type { Anomaly } from '../types';
-
-function severityColor(z: number): string {
-  return z >= 4 ? '#ef4444' : z >= 3 ? '#f97316' : z >= 2 ? '#eab308' : '#71717a';
-}
+import { severityColor } from '../utils/colors';
 
 function AnomalyItem({ a }: { a: Anomaly }) {
   const [hovered, setHovered] = useState(false);
   const z = a.z_score ?? 0;
-  const dotColor = severityColor(z);
-  const valueColor = severityColor(z);
+  const dotColor = severityColor(a.severity);
+  const valueColor = severityColor(a.severity);
 
   return (
     <div
@@ -38,7 +35,7 @@ function AnomalyItem({ a }: { a: Anomaly }) {
             z={a.z_score?.toFixed(1)}
           </span>
         </div>
-        <p style={{ fontSize: 10, color: '#d4d4d8', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <p style={{ fontSize: 10, color: '#a1a1aa', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {a.description}
         </p>
       </div>
@@ -63,11 +60,14 @@ export function AnomalyPanel() {
       flexDirection: 'column',
     }}>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
         <span style={{ fontSize: 9, letterSpacing: '0.1em', color: 'rgba(161,161,170,0.8)', textTransform: 'uppercase', fontWeight: 600 }}>
           ANOMALIES ({anomalies.length})
         </span>
         <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(251,191,36,0.8)', animation: 'pulse 2s infinite' }} />
+      </div>
+      <div style={{ fontSize: 10, color: 'rgba(161,161,170,0.5)', marginBottom: 12 }}>
+        Statistical outliers (z &gt; 2.5)
       </div>
 
       {/* List */}
@@ -88,28 +88,6 @@ export function AnomalyPanel() {
             )}
           </>
         )}
-      </div>
-
-      {/* Severity Legend */}
-      <div style={{
-        display: 'flex',
-        gap: 10,
-        justifyContent: 'center',
-        paddingTop: 8,
-        marginTop: 4,
-        borderTop: '1px solid rgba(255,255,255,0.06)',
-      }}>
-        {[
-          { label: '<2', color: '#71717a' },
-          { label: '2-3', color: '#eab308' },
-          { label: '3-4', color: '#f97316' },
-          { label: '4+', color: '#ef4444' },
-        ].map((item) => (
-          <span key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-            <span style={{ width: 4, height: 4, borderRadius: '50%', background: item.color, flexShrink: 0 }} />
-            <span style={{ fontSize: 8, color: 'rgba(161,161,170,0.5)', fontFamily: 'var(--font-mono)' }}>{item.label}</span>
-          </span>
-        ))}
       </div>
     </div>
   );

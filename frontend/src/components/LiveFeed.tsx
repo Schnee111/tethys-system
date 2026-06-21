@@ -2,28 +2,11 @@ import { useDataStore } from '../stores/dataStore';
 import { useGlobeStore } from '../stores/globeStore';
 import { motion, AnimatePresence } from 'motion/react';
 import { X } from 'lucide-react';
-
-const DOMAIN_COLORS: Record<string, string> = {
-  seismic: '#f87171',
-  solar_wind: '#fbbf24',
-  goes: '#a78bfa',
-  atmospheric: '#60a5fa',
-  volcanic: '#fb923c',
-  space_weather: '#34d399',
-};
+import { magnitudeColor, DOMAIN_COLORS } from '../utils/colors';
 
 function formatTime(time: string): string {
   try { return new Date(time).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }); }
   catch { return time?.substring(11, 16) || ''; }
-}
-
-function getMagnitudeColor(mag: number): string {
-  if (mag >= 6) return '#dc2626';
-  if (mag >= 5) return '#ef4444';
-  if (mag >= 4) return '#f59e0b';
-  if (mag >= 3) return '#fbbf24';
-  if (mag >= 2) return '#71717a';
-  return '#52525b';
 }
 
 export function LiveFeed() {
@@ -89,7 +72,7 @@ export function LiveFeed() {
           LIVE FEED
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#71717a', fontWeight: 500 }}>{filteredEvents.length} events</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#71717a', fontWeight: 500 }}>{filteredEvents.length} events · Last 24h</span>
           <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#ef4444', animation: 'pulse 2s infinite', boxShadow: '0 0 8px rgba(239,68,68,0.5)' }} />
         </div>
       </div>
@@ -140,7 +123,7 @@ export function LiveFeed() {
                     </span>
                   </div>
                   {event.magnitude && (
-                    <span style={{ fontSize: 9, color: getMagnitudeColor(event.magnitude), fontFamily: 'var(--font-mono)' }}>
+                    <span style={{ fontSize: 9, color: magnitudeColor(event.magnitude), fontFamily: 'var(--font-mono)' }}>
                       M{event.magnitude.toFixed(1)}
                     </span>
                   )}
