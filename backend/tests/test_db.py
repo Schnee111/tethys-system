@@ -1,9 +1,9 @@
 """Tethys — Tests for database connection and schema."""
 
-import pytest
 import asyncpg
+import pytest
 
-from backend.db.connection import init_pool, get_pool, close_pool
+from backend.db.connection import close_pool, get_pool, init_pool
 from backend.db.schema import create_tables
 
 
@@ -25,7 +25,6 @@ async def test_connection_pool_init(db_pool: asyncpg.Pool):
 
 async def test_get_pool_before_init():
     """get_pool() raises if pool not initialized."""
-    from backend.db.connection import _pool
     import backend.db.connection as mod
 
     # Ensure pool is None

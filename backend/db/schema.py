@@ -5,7 +5,12 @@ to create tables if they don't exist. TimescaleDB hypertables are
 created with create_hypertable() which is idempotent.
 """
 
+import contextlib
+import logging
+
 import asyncpg
+
+logger = logging.getLogger(__name__)
 
 SCHEMA_SQL = """
 -- Enable TimescaleDB extension
@@ -245,10 +250,8 @@ async def create_tables(pool: asyncpg.Pool) -> None:
         for stmt in HYPERTABLES_SQL.strip().split("\n"):
             stmt = stmt.strip()
             if stmt and not stmt.startswith("--"):
-                try:
+                with contextlib.suppress(Exception):
                     await conn.execute(stmt)
-                except Exception:
-                    pass  # Already exists
 
         # Indexes
         await conn.execute(INDEXES_SQL)
@@ -257,16 +260,12 @@ async def create_tables(pool: asyncpg.Pool) -> None:
         for stmt in CONTINUOUS_AGGREGATES_SQL.split(";"):
             stmt = stmt.strip()
             if stmt and not stmt.startswith("--"):
-                try:
+                with contextlib.suppress(Exception):
                     await conn.execute(stmt + ";")
-                except Exception:
-                    pass  # Already exists
 
         # Refresh policies
         for stmt in REFRESH_POLICIES_SQL.split(";"):
             stmt = stmt.strip()
             if stmt and not stmt.startswith("--"):
-                try:
+                with contextlib.suppress(Exception):
                     await conn.execute(stmt + ";")
-                except Exception:
-                    pass  # Already exists
