@@ -110,12 +110,15 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
 
                 pool = await get_pool()
                 recent = await _get_recent_events(pool, hours=24)
-                await websocket.send_json(
-                    {
-                        "type": "sync_response",
-                        "data": recent,
-                        "timestamp": datetime.now(UTC).isoformat(),
-                    }
+                await websocket.send_text(
+                    json.dumps(
+                        {
+                            "type": "sync_response",
+                            "data": recent,
+                            "timestamp": datetime.now(UTC).isoformat(),
+                        },
+                        default=str,
+                    )
                 )
 
     except WebSocketDisconnect:
@@ -159,7 +162,10 @@ async def _get_recent_events(pool, hours: int = 24) -> dict:
         for key, query in queries.items():
             try:
                 rows = await conn.fetch(query, interval)
-                result[key] = [dict(r) for r in rows]
+                result[key] = [
+                    {k: v.isoformat() if hasattr(v, "isoformat") else v for k, v in dict(r).items()}
+                    for r in rows
+                ]
             except Exception as e:
                 logger.warning(f"Failed to fetch {key} for sync: {e}")
                 result[key] = []
