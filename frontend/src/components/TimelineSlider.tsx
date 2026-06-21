@@ -23,8 +23,9 @@ export function TimelineSlider() {
       display: 'flex',
       alignItems: 'center',
       gap: 16,
-      background: 'rgba(255,255,255,0.06)',
-      backdropFilter: 'blur(16px)',
+      background: 'rgba(255,255,255,0.04)',
+      backdropFilter: 'blur(40px)',
+      WebkitBackdropFilter: 'blur(40px)',
       borderRadius: 9999,
       padding: '12px 24px',
       boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
@@ -43,12 +44,12 @@ export function TimelineSlider() {
           justifyContent: 'center',
           cursor: 'pointer',
           border: 'none',
-          background: isLive ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.08)',
+          background: isLive ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.05)',
           color: isLive ? '#6ee7b7' : '#a1a1aa',
           transition: 'all 0.3s',
         }}
       >
-        {isLive ? <Pause style={{ width: 12, height: 12 }} /> : <Play style={{ width: 12, height: 12 }} />}
+        {isLive ? <Pause style={{ width: 12, height: 12 }} /> : <Play style={{ width: 12, height: 12, marginLeft: 1 }} />}
       </button>
 
       {/* Reset */}
@@ -61,10 +62,11 @@ export function TimelineSlider() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: 'rgba(255,255,255,0.06)',
+          background: 'rgba(255,255,255,0.05)',
           color: '#a1a1aa',
           border: 'none',
           cursor: 'pointer',
+          transition: 'all 0.2s',
         }}
       >
         <RotateCcw style={{ width: 12, height: 12 }} />
@@ -74,7 +76,7 @@ export function TimelineSlider() {
 
       {/* Slider */}
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 12, fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 600, color: '#71717a' }}>
-        <span style={{ fontSize: 10, color: 'rgba(161,161,170,0.5)', cursor: 'pointer' }} onClick={() => setTimelinePercent(0)}>
+        <span style={{ fontSize: 10, color: 'rgba(161,161,170,0.5)', cursor: 'pointer', userSelect: 'none' }} onClick={() => setTimelinePercent(0)}>
           -12H
         </span>
         <div style={{ flex: 1, position: 'relative' }}>
@@ -87,12 +89,13 @@ export function TimelineSlider() {
             style={{
               width: '100%',
               height: 2,
-              background: `linear-gradient(to right, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.12) ${timelinePercent}%, rgba(255,255,255,0.04) ${timelinePercent}%, rgba(255,255,255,0.04) 100%)`,
+              background: `linear-gradient(to right, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.4) ${timelinePercent}%, rgba(255,255,255,0.08) ${timelinePercent}%, rgba(255,255,255,0.08) 100%)`,
               borderRadius: 1,
               cursor: 'ew-resize',
               outline: 'none',
               appearance: 'none',
               WebkitAppearance: 'none',
+              accentColor: '#fff',
             }}
           />
         </div>
@@ -100,10 +103,12 @@ export function TimelineSlider() {
           onClick={() => { setLive(true); setTimelinePercent(100); }}
           style={{
             fontSize: 10,
-            letterSpacing: '0.1em',
+            letterSpacing: '0.15em',
             textTransform: 'uppercase',
             cursor: 'pointer',
+            userSelect: 'none',
             color: timelinePercent === 100 ? '#4ade80' : 'rgba(161,161,170,0.5)',
+            transition: 'color 0.2s',
           }}
         >
           {getTimeLabel()}
