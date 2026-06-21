@@ -1,26 +1,80 @@
 import axios from 'axios';
+import type { PlanetaryEvent, Anomaly } from '../types';
 
-// Use relative URLs — Vite proxy handles forwarding to backend
-// This avoids CORS issues and works in both dev and production
 const client = axios.create({
   baseURL: '',
   timeout: 10000,
 });
 
+// Transform API response to frontend types
+function transformSeismicEvent(e: any): PlanetaryEvent {
+  return {
+    time: e.time,
+    event_id: e.event_id,
+    domain: 'seismic',
+    title: `M${e.magnitude?.toFixed(1) || '?'} — ${e.place || 'Unknown'}`,
+    location: e.place || 'Unknown',
+    latitude: e.latitude,
+    longitude: e.longitude,
+    magnitude: e.magnitude,
+    depth_km: e.depth_km,
+    description: `Depth: ${e.depth_km?.toFixed(1) || '?'}km | Type: ${e.type || 'earthquake'} | Sig: ${e.sig || '-'}`,
+    severity: getSeverityFromMag(e.magnitude),
+  };
+}
+
+function transformAnomaly(a: any): Anomaly {
+  return {
+    time: a.time,
+    anomaly_id: a.anomaly_id,
+    domain: a.domain,
+    metric: a.metric,
+    value: a.value,
+    z_score: a.z_score,
+    severity: a.severity,
+    description: `${a.metric}: ${a.value?.toFixed(2)} (z=${a.z_score?.toFixed(1)})`,
+  };
+}
+
+function getSeverityFromMag(mag: number): 'low' | 'medium' | 'high' | 'critical' {
+  if (mag >= 6) return 'critical';
+  if (mag >= 5) return 'high';
+  if (mag >= 4) return 'medium';
+  return 'low';
+}
+
 export const api = {
   getStatus: () => client.get('/api/v1/status').then(r => r.data),
-  getSeismic: (params?: { hours?: number; min_mag?: number; limit?: number }) =>
-    client.get('/api/v1/events/seismic', { params }).then(r => r.data),
+
+  getSeismic: async (params?: { hours?: number; min_mag?: number; limit?: number }) => {
+    const { data } = await client.get('/api/v1/events/seismic', { params });
+    return {
+      count: data.count,
+      events: (data.events || []).map(transformSeismicEvent),
+    };
+  },
+
   getSolarWindLatest: () => client.get('/api/v1/solar-wind/latest').then(r => r.data),
+
   getGoesXray: (params?: { hours?: number }) =>
     client.get('/api/v1/goes/xray', { params }).then(r => r.data),
+
   getSpaceWeather: (params?: { hours?: number; event_type?: string }) =>
     client.get('/api/v1/space-weather', { params }).then(r => r.data),
+
   getVolcanic: (params?: { days?: number }) =>
     client.get('/api/v1/volcanic', { params }).then(r => r.data),
-  getAnomalies: (params?: { hours?: number; domain?: string; severity?: string }) =>
-    client.get('/api/v1/anomalies', { params }).then(r => r.data),
+
+  getAnomalies: async (params?: { hours?: number; domain?: string; severity?: string }) => {
+    const { data } = await client.get('/api/v1/anomalies', { params });
+    return {
+      count: data.count,
+      anomalies: (data.anomalies || []).map(transformAnomaly),
+    };
+  },
+
   getCorrelations: (params?: { hours?: number; significant_only?: boolean }) =>
     client.get('/api/v1/correlations', { params }).then(r => r.data),
+
   getActivity: () => client.get('/api/v1/activity').then(r => r.data),
 };

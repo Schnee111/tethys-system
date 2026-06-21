@@ -54,10 +54,20 @@ export function LiveFeed() {
                       {event.domain}
                     </span>
                   </div>
+                  {event.magnitude && (
+                    <span className="text-[10px] text-zinc-400 font-mono">
+                      M{event.magnitude.toFixed(1)}
+                    </span>
+                  )}
                 </div>
                 <p className="text-zinc-300 text-sm font-light leading-tight group-hover:text-white transition-colors">
-                  {event.title || event.description?.substring(0, 60)}
+                  {event.title}
                 </p>
+                {event.description && (
+                  <p className="text-[10px] text-zinc-500 mt-1 leading-tight">
+                    {event.description}
+                  </p>
+                )}
               </div>
             );
           })
