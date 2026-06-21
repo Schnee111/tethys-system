@@ -54,7 +54,7 @@ ignore = ["E501"]
 [tool.ruff.lint.per-file-ignores]
 "backend/tests/**" = ["S101", "S324", "ARG", "RUF059"]
 "backend/**/__init__.py" = ["F401"]
-"backend/analysis/**" = ["S324", "S608"]
+"backend/analysis/**" = ["S324", "S608", "N806"]
 "backend/collectors/**" = ["S324"]
 
 [tool.ruff.format]

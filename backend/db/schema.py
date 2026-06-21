@@ -193,6 +193,15 @@ CREATE TABLE IF NOT EXISTS activity_assessments (
     details           JSONB,
     PRIMARY KEY (time, assessment_id)
 );
+
+-- Geomagnetic indices (Kp, Dst)
+CREATE TABLE IF NOT EXISTS geomagnetic_indices (
+    time          TIMESTAMPTZ NOT NULL,
+    index_type    TEXT NOT NULL,  -- 'kp' or 'dst'
+    value         REAL NOT NULL,
+    storm_level   TEXT,
+    PRIMARY KEY (time, index_type)
+);
 """
 
 HYPERTABLES_SQL = """
@@ -208,6 +217,7 @@ SELECT create_hypertable('raw_ingestion', 'time', if_not_exists => TRUE);
 SELECT create_hypertable('anomalies', 'time', if_not_exists => TRUE);
 SELECT create_hypertable('correlations', 'time', if_not_exists => TRUE);
 SELECT create_hypertable('activity_assessments', 'time', if_not_exists => TRUE);
+SELECT create_hypertable('geomagnetic_indices', 'time', if_not_exists => TRUE);
 """
 
 INDEXES_SQL = """
