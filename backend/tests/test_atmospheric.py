@@ -411,7 +411,7 @@ async def test_collect_api_url_construction(collector):
 
     called_url = collector.fetch_json.call_args[0][0]
     assert "api.open-meteo.com" in called_url
-    assert "past_days=2" in called_url
+    assert "past_days=" in called_url
     assert "forecast_days=0" in called_url
     assert "temperature_2m_max" in called_url
     assert "temperature_2m_min" in called_url

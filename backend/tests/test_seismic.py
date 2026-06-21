@@ -264,7 +264,7 @@ async def test_collect_parses_geojson(collector):
     assert len(records) == 2
     assert records[0]["event_id"] == "us7000abc1"
     assert records[1]["event_id"] == "ci12345678"
-    collector.fetch_json.assert_awaited_once_with(collector.endpoint)
+    collector.fetch_json.assert_awaited_once_with(collector.endpoint.replace("all_hour", "all_week"))
 
 
 @pytest.mark.asyncio

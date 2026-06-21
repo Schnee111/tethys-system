@@ -96,6 +96,9 @@ class AtmosphericCollector(BaseCollector):
         """
         all_records: list[dict[str, Any]] = []
 
+        # Backfill: use 92 days on first run, 2 days on subsequent runs
+        past_days = 92 if self.last_poll_time is None else 2
+
         # Split points into batches
         for i in range(0, len(self.points), self.batch_size):
             batch = self.points[i : i + self.batch_size]
@@ -105,7 +108,7 @@ class AtmosphericCollector(BaseCollector):
                 f"{self.endpoint}"
                 f"?latitude={coords['latitude']}"
                 f"&longitude={coords['longitude']}"
-                f"&past_days=2"
+                f"&past_days={past_days}"
                 f"&forecast_days=0"
                 f"&daily=temperature_2m_max,temperature_2m_min,"
                 f"precipitation_sum,wind_speed_10m_max,"

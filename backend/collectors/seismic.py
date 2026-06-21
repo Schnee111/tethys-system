@@ -29,9 +29,17 @@ class SeismicCollector(BaseCollector):
     async def collect(self) -> list[dict[str, Any]]:
         """Fetch earthquake data from USGS GeoJSON feed.
 
+        First run: fetches 7-day backlog (all_week.geojson).
+        Subsequent runs: fetches past hour (all_hour.geojson).
         Returns list of parsed event dicts ready for format_record().
         """
-        data = await self.fetch_json(self.endpoint)
+        # Backfill: use 7-day feed on first run
+        if self.last_poll_time is None:
+            url = self.endpoint.replace("all_hour", "all_week")
+        else:
+            url = self.endpoint
+
+        data = await self.fetch_json(url)
         features = data.get("features", [])
         return [self._parse_feature(f) for f in features]
 
