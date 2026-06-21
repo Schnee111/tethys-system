@@ -85,7 +85,7 @@ export default function App() {
         </aside>
 
         {/* Right panel */}
-        <aside style={{ position: 'absolute', right: 48, top: 112, bottom: 112, width: 320, display: 'flex', flexDirection: 'column', gap: 16, padding: 20, borderRadius: 16, background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(16px)', , pointerEvents: 'auto' }}>
+        <aside style={{ position: 'absolute', right: 48, top: 112, bottom: 112, width: 320, display: 'flex', flexDirection: 'column', gap: 16, padding: 20, borderRadius: 16, background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(16px)', pointerEvents: 'auto' }}>
           <LiveFeed />
         </aside>
 
