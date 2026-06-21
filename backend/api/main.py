@@ -10,6 +10,10 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from backend.api.routes.events import router as events_router
+from backend.api.routes.websocket import broadcast_event
+from backend.api.routes.websocket import router as ws_router
+from backend.collectors.base import set_broadcast_callback
 from backend.config import DATABASE_URL, TETHYS_ENV
 from backend.db.connection import close_pool, get_pool, init_pool
 from backend.db.schema import create_tables
@@ -39,9 +43,13 @@ async def lifespan(app: FastAPI):
     pool = await init_pool(DATABASE_URL)
     await create_tables(pool)
 
+    # Wire WebSocket broadcast into collectors
+    set_broadcast_callback(broadcast_event)
+
     yield
 
     # Shutdown
+    set_broadcast_callback(None)
     await close_pool()
 
 
@@ -58,6 +66,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include routers
+app.include_router(events_router)
+app.include_router(ws_router)
 
 
 @app.get("/api/v1/status")
