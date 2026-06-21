@@ -60,7 +60,7 @@ export default function App() {
         </header>
 
         {/* HUD — top right */}
-        <div style={{ position: 'absolute', top: 32, right: 48, display: 'flex', alignItems: 'center', gap: 24, padding: '4px 24px', borderRadius: 9999, background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(16px)', pointerEvents: 'auto' }}>
+        <div style={{ position: 'absolute', top: 32, right: 48, display: 'flex', alignItems: 'center', gap: 24, padding: '4px 24px', borderRadius: 9999, background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(16px)', pointerEvents: 'auto' }}>
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.05em', color: '#71717a', textTransform: 'uppercase' }}>
             OPERATOR: DAFFA
           </span>
@@ -71,7 +71,7 @@ export default function App() {
           </div>
           <Settings style={{ width: 16, height: 16, color: '#71717a' }} />
           <div style={{ width: 1, height: 14, background: 'rgba(255,255,255,0.05)' }} />
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderRadius: 9999, background: 'rgba(255,255,255,0.08)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderRadius: 9999, background: 'rgba(255,255,255,0.12)' }}>
             <User style={{ width: 14, height: 14, color: '#71717a' }} />
             <span style={{ fontSize: 10, textTransform: 'uppercase', fontFamily: 'var(--font-mono)', letterSpacing: '0.1em', color: '#a1a1aa' }}>SECURE</span>
           </div>
@@ -85,7 +85,7 @@ export default function App() {
         </aside>
 
         {/* Right panel */}
-        <aside style={{ position: 'absolute', right: 48, top: 112, bottom: 112, width: 320, display: 'flex', flexDirection: 'column', gap: 16, padding: 20, borderRadius: 16, background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(16px)', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.4)', pointerEvents: 'auto' }}>
+        <aside style={{ position: 'absolute', right: 48, top: 112, bottom: 112, width: 320, display: 'flex', flexDirection: 'column', gap: 16, padding: 20, borderRadius: 16, background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(16px)', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.4)', pointerEvents: 'auto' }}>
           <LiveFeed />
         </aside>
 

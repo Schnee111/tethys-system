@@ -23,7 +23,7 @@ export function TimelineSlider() {
       display: 'flex',
       alignItems: 'center',
       gap: 16,
-      background: 'rgba(255,255,255,0.08)',
+      background: 'rgba(255,255,255,0.12)',
       backdropFilter: 'blur(16px)',
       borderRadius: 9999,
       padding: '12px 24px',
@@ -43,7 +43,7 @@ export function TimelineSlider() {
           justifyContent: 'center',
           cursor: 'pointer',
           border: 'none',
-          background: isLive ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.08)',
+          background: isLive ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.12)',
           color: isLive ? '#6ee7b7' : '#a1a1aa',
           transition: 'all 0.3s',
         }}
@@ -61,7 +61,7 @@ export function TimelineSlider() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: 'rgba(255,255,255,0.08)',
+          background: 'rgba(255,255,255,0.12)',
           color: '#a1a1aa',
           border: 'none',
           cursor: 'pointer',
@@ -70,7 +70,7 @@ export function TimelineSlider() {
         <RotateCcw style={{ width: 12, height: 12 }} />
       </button>
 
-      <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)' }} />
+      <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.12)' }} />
 
       {/* Slider */}
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 12, fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 600, color: '#71717a' }}>
@@ -87,7 +87,7 @@ export function TimelineSlider() {
             style={{
               width: '100%',
               height: 2,
-              background: `linear-gradient(to right, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.08) ${timelinePercent}%, rgba(255,255,255,0.08) ${timelinePercent}%, rgba(255,255,255,0.08) 100%)`,
+              background: `linear-gradient(to right, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.12) ${timelinePercent}%, rgba(255,255,255,0.12) ${timelinePercent}%, rgba(255,255,255,0.12) 100%)`,
               borderRadius: 1,
               cursor: 'ew-resize',
               outline: 'none',

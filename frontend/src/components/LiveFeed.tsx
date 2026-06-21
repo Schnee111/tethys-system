@@ -34,14 +34,14 @@ export function LiveFeed() {
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.25 }}
-            style={{ overflow: 'hidden', background: 'rgba(255,255,255,0.08)', borderRadius: 12, textAlign: 'left' }}
+            style={{ overflow: 'hidden', background: 'rgba(255,255,255,0.12)', borderRadius: 12, textAlign: 'left' }}
           >
             <div style={{ padding: 16, display: 'flex', flexDirection: 'column' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                 <span style={{
                   padding: '2px 10px', borderRadius: 9999, fontSize: 9,
                   fontFamily: 'var(--font-mono)', fontWeight: 700, letterSpacing: '0.1em',
-                  background: 'rgba(255,255,255,0.08)', textTransform: 'uppercase',
+                  background: 'rgba(255,255,255,0.12)', textTransform: 'uppercase',
                   color: DOMAIN_COLORS[selectedEvent.domain] || '#a1a1aa',
                 }}>
                   {selectedEvent.domain}
@@ -108,7 +108,7 @@ export function LiveFeed() {
                   padding: 12,
                   borderRadius: 12,
                   cursor: 'pointer',
-                  background: isSelected ? 'rgba(255,255,255,0.08)' : 'transparent',
+                  background: isSelected ? 'rgba(255,255,255,0.12)' : 'transparent',
                   transition: 'all 0.3s',
                   textAlign: 'left',
                   marginBottom: 8,
@@ -144,7 +144,7 @@ export function LiveFeed() {
       </div>
 
       {/* Telemetry */}
-      <div style={{ paddingTop: 12, fontFamily: 'var(--font-mono)', fontSize: 9, color: '#71717a', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+      <div style={{ paddingTop: 12, fontFamily: 'var(--font-mono)', fontSize: 9, color: '#71717a', borderTop: '1px solid rgba(255,255,255,0.12)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
           <span>ATMOSPHERE</span>
           <span style={{ color: '#a1a1aa' }}>1013 HPA [NORM]</span>
