@@ -17,7 +17,6 @@ export function AnomalyPanel() {
       background: 'rgba(255,255,255,0.15)',
       backdropFilter: 'blur(16px)',
       textAlign: 'left',
-      ,
       flex: '1 1 0',
       minHeight: 0,
       overflow: 'hidden',

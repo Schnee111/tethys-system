@@ -21,7 +21,6 @@ export function SensorsGrid() {
       textAlign: 'left',
       fontSize: 10,
       color: '#71717a',
-      ,
       flexShrink: 0,
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
