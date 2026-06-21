@@ -29,7 +29,7 @@ export function ActivityCard() {
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: 9, marginBottom: 3 }}>
         <span>SCORE</span>
-        <span style={{ color: isNoData ? '#71717a' : '#d4d4d8', fontWeight: 700 }}>{score.toFixed(2)} / 1.00</span>
+        <span style={{ color: isNoData ? '#71717a' : '#d4d4d8', fontWeight: 700 }}>{isNoData ? '—' : `${score.toFixed(2)} / 1.00`}</span>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: 9, marginBottom: 3 }}>
         <span>CONFIDENCE</span>

@@ -41,9 +41,6 @@ function AnomalyItem({ a }: { a: Anomaly }) {
         <p style={{ fontSize: 10, color: '#d4d4d8', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {a.description}
         </p>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: valueColor }}>
-          {a.metric}: {typeof a.value === 'number' ? a.value.toFixed(2) : a.value}
-        </span>
       </div>
     </div>
   );
