@@ -25,7 +25,7 @@ async def get_seismic_events(
             SELECT time, event_id, magnitude, latitude, longitude,
                    depth_km, place, type, tsunami, sig, alert, felt
             FROM seismic_events
-            WHERE time > NOW() - INTERVAL '$1 hours'
+            WHERE time > NOW() - make_interval(hours => $1)
               AND magnitude >= $2
             ORDER BY time DESC
             LIMIT $3
@@ -68,7 +68,7 @@ async def get_goes_xray(
             """
             SELECT time, flux_type, energy_band, flux, satellite
             FROM goes_flux
-            WHERE time > NOW() - INTERVAL '$1 hours'
+            WHERE time > NOW() - make_interval(hours => $1)
               AND flux_type = 'xray'
             ORDER BY time DESC
             LIMIT 1000
@@ -96,7 +96,7 @@ async def get_space_weather(
                 SELECT time, event_id, event_type, source, speed,
                        latitude, longitude, description, link
                 FROM space_weather_events
-                WHERE time > NOW() - INTERVAL '$1 hours'
+                WHERE time > NOW() - make_interval(hours => $1)
                   AND event_type = $2
                 ORDER BY time DESC
                 LIMIT $3
@@ -111,7 +111,7 @@ async def get_space_weather(
                 SELECT time, event_id, event_type, source, speed,
                        latitude, longitude, description, link
                 FROM space_weather_events
-                WHERE time > NOW() - INTERVAL '$1 hours'
+                WHERE time > NOW() - make_interval(hours => $1)
                 ORDER BY time DESC
                 LIMIT $2
                 """,
@@ -136,7 +136,7 @@ async def get_volcanic_events(
             SELECT time, event_id, volcano_name, latitude, longitude,
                    elevation_m, event_type, vei, description, link
             FROM volcanic_events
-            WHERE time > NOW() - INTERVAL '$1 days'
+            WHERE time > NOW() - make_interval(days => $1)
             ORDER BY time DESC
             """,
             days,
