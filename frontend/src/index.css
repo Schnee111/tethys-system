@@ -6,28 +6,23 @@
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+@layer utilities {
+  .scrollbar-none::-webkit-scrollbar { display: none; }
+  .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
 }
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
   font-family: var(--font-sans);
   background: #020205;
   color: #e0e6ed;
-  height: 100vh;
-  overflow: hidden;
   -webkit-font-smoothing: antialiased;
 }
 
-/* Hide scrollbar */
-.scrollbar-none::-webkit-scrollbar { display: none; }
-.scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
-
-/* Custom range slider */
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
+  appearance: none;
   width: 10px;
   height: 10px;
   border-radius: 50%;
@@ -42,19 +37,17 @@ input[type="range"]::-webkit-slider-thumb:hover {
   transform: scale(1.35);
 }
 
-/* Starfield animations */
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 @keyframes twinkle {
   0%, 100% { opacity: 0.15; transform: scale(0.85); }
   50% { opacity: 1; transform: scale(1.15); }
 }
 
+.animate-spin-slow { animation: spin-slow 20s linear infinite; }
 .animate-twinkle-slow { animation: twinkle 5s ease-in-out infinite; }
 .animate-twinkle-mid { animation: twinkle 3.5s ease-in-out infinite; }
 .animate-twinkle-fast { animation: twinkle 2s ease-in-out infinite; }
-
-/* Spin animation for compass */
-@keyframes spin-slow {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-.animate-spin-slow { animation: spin-slow 20s linear infinite; }

@@ -1,8 +1,7 @@
-import { useDataStore } from '../../stores/dataStore';
+import { useDataStore } from '../stores/dataStore';
 
 export function ActivityCard() {
   const { activity, isLoading } = useDataStore();
-
   const level = activity?.activity_level || 'unknown';
   const score = activity?.activity_score ?? 0;
   const confidence = activity?.confidence ?? 0;
@@ -10,12 +9,8 @@ export function ActivityCard() {
   return (
     <div className="p-3.5 rounded-2xl bg-white/[0.035] backdrop-blur-3xl text-left font-sans text-[10px] text-zinc-500 space-y-1.5 shadow-2xl shadow-black/40 shrink-0">
       <div className="flex justify-between items-center">
-        <span className="font-sans text-[9px] text-zinc-400/50 uppercase tracking-wider font-semibold">
-          ACTIVITY INDEX
-        </span>
-        <span className="text-emerald-400/80 font-bold font-mono text-[9px]">
-          {isLoading ? '...' : level.toUpperCase()}
-        </span>
+        <span className="font-sans text-[9px] text-zinc-400/50 uppercase tracking-wider font-semibold">ACTIVITY INDEX</span>
+        <span className="text-emerald-400/80 font-bold font-mono text-[9px]">{isLoading ? '...' : level.toUpperCase()}</span>
       </div>
       <div className="flex justify-between font-mono text-[9px]">
         <span>SCORE</span>

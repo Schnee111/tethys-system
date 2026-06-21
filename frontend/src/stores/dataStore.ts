@@ -7,9 +7,7 @@ interface DataState {
   activity: ActivityAssessment | null;
   status: SystemStatus | null;
   isLoading: boolean;
-
   setEvents: (events: PlanetaryEvent[]) => void;
-  addEvent: (event: PlanetaryEvent) => void;
   setAnomalies: (anomalies: Anomaly[]) => void;
   setActivity: (activity: ActivityAssessment) => void;
   setStatus: (status: SystemStatus) => void;
@@ -22,11 +20,7 @@ export const useDataStore = create<DataState>((set) => ({
   activity: null,
   status: null,
   isLoading: true,
-
   setEvents: (events) => set({ events }),
-  addEvent: (event) => set((state) => ({
-    events: [event, ...state.events].slice(0, 500),
-  })),
   setAnomalies: (anomalies) => set({ anomalies }),
   setActivity: (activity) => set({ activity }),
   setStatus: (status) => set({ status }),
