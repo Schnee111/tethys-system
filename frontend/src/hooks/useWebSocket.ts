@@ -104,8 +104,6 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
   const setWsConnected = useDataStore(s => s.setWsConnected);
   const setEvents = useDataStore(s => s.setEvents);
   const addEvents = useDataStore(s => s.addEvents);
-  const setAnomalies = useDataStore(s => s.setAnomalies);
-  const addAnomalies = useDataStore(s => s.addAnomalies);
   const setActivity = useDataStore(s => s.setActivity);
 
   const connect = useCallback(() => {
@@ -159,10 +157,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
             }
 
             setEvents(allEvents);
-
-            if (data.space_weather) {
-              setAnomalies(data.space_weather.map(transformSpaceWeather));
-            }
+            // Don't set anomalies from sync — REST API handles that with proper z-scores
 
             console.log(`[WS] Sync: ${allEvents.length} events loaded`);
             break;
@@ -183,12 +178,6 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
           case 'goes': {
             const records = msg.data || [];
             addEvents(records.map(transformGoes));
-            break;
-          }
-
-          case 'space_weather': {
-            const records = msg.data || [];
-            addAnomalies(records.map(transformSpaceWeather));
             break;
           }
 
@@ -220,7 +209,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     ws.onerror = (err) => {
       console.error('[WS] Error:', err);
     };
-  }, [enabled, reconnectInterval, maxReconnectAttempts, setWsConnected, setEvents, addEvents, setAnomalies, addAnomalies]);
+  }, [enabled, reconnectInterval, maxReconnectAttempts, setWsConnected, setEvents, addEvents]);
 
   useEffect(() => {
     isMounted.current = true;
