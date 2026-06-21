@@ -1,9 +1,9 @@
 import axios from 'axios';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-
+// Use relative URLs — Vite proxy handles forwarding to backend
+// This avoids CORS issues and works in both dev and production
 const client = axios.create({
-  baseURL: API_BASE,
+  baseURL: '',
   timeout: 10000,
 });
 
