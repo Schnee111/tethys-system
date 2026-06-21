@@ -299,7 +299,7 @@ def test_format_record_raw_data_is_json(collector):
 @pytest.mark.asyncio
 async def test_collect_parses_events(collector):
     """collect() fetches and parses EONET events, filtering closed ones."""
-    collector.fetch_json = AsyncMock(return_value=SAMPLE_EONET_RESPONSE)
+    collector._fetch_eonet_json = AsyncMock(return_value=SAMPLE_EONET_RESPONSE)
 
     records = await collector.collect()
 
@@ -307,13 +307,13 @@ async def test_collect_parses_events(collector):
     assert len(records) == 2
     assert records[0]["event_id"] == "EONET_20409"
     assert records[1]["event_id"] == "EONET_20500"
-    collector.fetch_json.assert_awaited_once_with(collector.endpoint)
+    collector._fetch_eonet_json.assert_awaited_once()
 
 
 @pytest.mark.asyncio
 async def test_collect_empty_events(collector):
     """collect() returns empty list for empty events array."""
-    collector.fetch_json = AsyncMock(return_value=EMPTY_EONET_RESPONSE)
+    collector._fetch_eonet_json = AsyncMock(return_value=EMPTY_EONET_RESPONSE)
 
     records = await collector.collect()
     assert records == []
@@ -322,7 +322,7 @@ async def test_collect_empty_events(collector):
 @pytest.mark.asyncio
 async def test_collect_missing_events_key(collector):
     """collect() handles missing events key gracefully."""
-    collector.fetch_json = AsyncMock(return_value={})
+    collector._fetch_eonet_json = AsyncMock(return_value={})
 
     records = await collector.collect()
     assert records == []
@@ -353,7 +353,7 @@ async def test_collect_filters_closed_events(collector):
             },
         ]
     }
-    collector.fetch_json = AsyncMock(return_value=response)
+    collector._fetch_eonet_json = AsyncMock(return_value=response)
 
     records = await collector.collect()
     assert len(records) == 1
@@ -403,7 +403,7 @@ async def test_full_pipeline(mock_pool):
     """End-to-end: collect → format_record → store."""
     pool, conn = mock_pool
     c = VolcanicCollector(pool)
-    c.fetch_json = AsyncMock(return_value=SAMPLE_EONET_RESPONSE)
+    c._fetch_eonet_json = AsyncMock(return_value=SAMPLE_EONET_RESPONSE)
 
     # Collect — should filter closed event
     records = await c.collect()
