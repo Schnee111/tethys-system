@@ -17,12 +17,19 @@ body {
 ::-webkit-scrollbar { display: none; }
 * { scrollbar-width: none; -ms-overflow-style: none; }
 
-/* Timeline slider — thumb styling */
+/* Timeline slider — reset + thumb styling */
 input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
   background: transparent;
   cursor: ew-resize;
+  height: 10px; /* match thumb size — browser centers thumb in this box */
+  margin: 0;
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 2px;
+  border-radius: 1px;
 }
 
 input[type="range"]::-webkit-slider-thumb {
@@ -32,8 +39,8 @@ input[type="range"]::-webkit-slider-thumb {
   border-radius: 50%;
   background: #fff;
   border: none;
-  margin-top: -1.5px;
   box-shadow: 0 0 6px rgba(255,255,255,0.3);
+  /* no margin-top needed — thumb auto-centers in 10px input */
 }
 
 input[type="range"]::-moz-range-thumb {
