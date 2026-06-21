@@ -83,8 +83,8 @@ export default function App() {
             <span style={{ position: 'absolute', top: 1, right: 1, width: 6, height: 6, background: '#f43f5e', borderRadius: '50%' }} />
           </div>
           <Settings style={{ width: 16, height: 16, color: '#71717a' }} />
-          <div style={{ width: 1, height: 14, background: 'rgba(255,255,255,0.05)' }} />
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderRadius: 9999, background: 'rgba(255,255,255,0.05)' }}>
+          <div style={{ width: 1, height: 14, background: 'rgba(255,255,255,0.08)' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderRadius: 9999, background: 'rgba(255,255,255,0.08)' }}>
             <User style={{ width: 14, height: 14, color: '#71717a' }} />
             <span style={{ fontSize: 10, textTransform: 'uppercase', fontFamily: 'var(--font-mono)', letterSpacing: '0.1em', color: '#a1a1aa' }}>SECURE</span>
           </div>
