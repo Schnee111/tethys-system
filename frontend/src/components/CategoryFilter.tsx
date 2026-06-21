@@ -20,7 +20,6 @@ export function CategoryFilter({ activeCategories, onToggle }: CategoryFilterPro
       zIndex: 40,
       background: 'rgba(255,255,255,0.06)',
       backdropFilter: 'blur(16px)',
-      border: '1px solid rgba(255,255,255,0.06)',
       borderRadius: 9999,
       padding: '12px 24px',
       display: 'flex',
