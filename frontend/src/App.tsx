@@ -57,13 +57,10 @@ export default function App() {
       {/* Globe — IS the background, fills entire viewport */}
       <EarthGlobe />
 
-      {/* Overlays — on top of globe, behind panels */}
+      {/* Vignette — darkens edges, focuses attention on center Earth */}
       <div style={{
         position: 'fixed', inset: 0, zIndex: 5, pointerEvents: 'none',
-        background: `
-          radial-gradient(circle at center, transparent 30%, rgba(2,2,8,0.6) 80%),
-          linear-gradient(to bottom, rgba(0,0,0,0.3), transparent 20%, transparent 80%, rgba(0,0,0,0.5))
-        `,
+        background: 'radial-gradient(ellipse at center, transparent 40%, rgba(2,2,8,0.7) 100%)',
       }} />
 
       {/* UI Layer — on top of everything */}
