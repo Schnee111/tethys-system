@@ -1,5 +1,6 @@
 import { useDataStore } from '../stores/dataStore';
 import { useGlobeStore } from '../stores/globeStore';
+import { useGlobeStore } from '../stores/globeStore';
 import { motion, AnimatePresence } from 'motion/react';
 
 const DOMAIN_COLORS: Record<string, string> = {
@@ -18,6 +19,8 @@ function formatTime(time: string): string {
 
 export function LiveFeed() {
   const { events, isLoading } = useDataStore();
+  const { activeCategories } = useGlobeStore();
+  const filteredEvents = events.filter(e => activeCategories.has(e.domain));
   const { selectedEvent, setSelectedEvent } = useGlobeStore();
 
   return (
@@ -77,7 +80,7 @@ export function LiveFeed() {
           LIVE FEED
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#71717a', fontWeight: 500 }}>{events.length} events</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#71717a', fontWeight: 500 }}>{filteredEvents.length} events</span>
           <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#ef4444', animation: 'pulse 2s infinite', boxShadow: '0 0 8px rgba(239,68,68,0.5)' }} />
         </div>
       </div>
@@ -89,13 +92,13 @@ export function LiveFeed() {
             <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#52525b', animation: 'pulse 2s infinite', marginBottom: 12 }} />
             Connecting...
           </div>
-        ) : events.length === 0 ? (
+        ) : filteredEvents.length === 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 192, color: '#71717a', fontSize: 10, fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
             <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#52525b', animation: 'pulse 2s infinite', marginBottom: 12 }} />
             No signals
           </div>
         ) : (
-          events.slice(0, 50).map((event) => {
+          filteredEvents.slice(0, 50).map((event) => {
             const isSelected = selectedEvent?.event_id === event.event_id && selectedEvent?.time === event.time;
             return (
               <div

@@ -2,6 +2,7 @@ import { useRef, useEffect, useState } from 'react';
 import * as THREE from 'three';
 import Globe from 'react-globe.gl';
 import { useDataStore } from '../stores/dataStore';
+import { useGlobeStore } from '../stores/globeStore';
 
 function getColor(mag: number): string {
   if (mag >= 6) return '#dc2626';
@@ -14,6 +15,8 @@ function getColor(mag: number): string {
 export function EarthGlobe() {
   const globeRef = useRef<any>(null);
   const { events } = useDataStore();
+  const { activeCategories } = useGlobeStore();
+  const filteredEvents = events.filter(e => activeCategories.has(e.domain));
   const [size, setSize] = useState({ w: window.innerWidth, h: window.innerHeight });
 
   useEffect(() => {
@@ -30,7 +33,7 @@ export function EarthGlobe() {
   }, []);
 
   // Thin pillar lines (native globe.gl points)
-  const points = events.map((e) => ({
+  const points = filteredEvents.map((e) => ({
     lat: e.latitude,
     lng: e.longitude,
     altitude: 0.01 + (e.magnitude || 2) * 0.005,
@@ -39,7 +42,7 @@ export function EarthGlobe() {
   }));
 
   // Glowing spheres on top of pillars
-  const sphereAlt = events.map((e) => ({
+  const sphereAlt = filteredEvents.map((e) => ({
     lat: e.latitude,
     lng: e.longitude,
     alt: 0.01 + (e.magnitude || 2) * 0.005,
