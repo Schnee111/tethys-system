@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState } from 'react';
+import * as THREE from 'three';
 import Globe from 'react-globe.gl';
 import { useDataStore } from '../stores/dataStore';
 
@@ -8,6 +9,30 @@ function getColor(mag: number): string {
   if (mag >= 4) return '#f59e0b';
   if (mag >= 3) return '#94a3b8';
   return '#64748b';
+}
+
+// Lighthouse marker: thin line + glowing sphere on top
+function createLighthouse(d: any): THREE.Object3D {
+  const group = new THREE.Group();
+  const color = new THREE.Color(d.color);
+  const height = (d.event?.magnitude || 2) * 0.8 + 1;
+
+  // Thin pillar line
+  const lineGeo = new THREE.CylinderGeometry(0.003, 0.003, height, 4);
+  const lineMat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.7 });
+  const line = new THREE.Mesh(lineGeo, lineMat);
+  line.position.y = height / 2;
+  group.add(line);
+
+  // Glowing sphere on top
+  const sphereSize = Math.max(0.08, (d.event?.magnitude || 2) * 0.025);
+  const sphereGeo = new THREE.SphereGeometry(sphereSize, 12, 12);
+  const sphereMat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.95 });
+  const sphere = new THREE.Mesh(sphereGeo, sphereMat);
+  sphere.position.y = height;
+  group.add(sphere);
+
+  return group;
 }
 
 export function EarthGlobe() {
@@ -28,15 +53,13 @@ export function EarthGlobe() {
     globe.controls().autoRotateSpeed = 0.2;
   }, []);
 
-  // Points: thin pillars (line-like) with small cap
   const points = events.map((e) => ({
     lat: e.latitude,
     lng: e.longitude,
-    altitude: 0.01 + (e.magnitude || 2) * 0.005,  // taller for bigger quakes
-    size: 0.08,  // thin radius = looks like a line
+    altitude: 0.01,
+    size: 0.1,
     color: getColor(e.magnitude || 2),
     event: e,
-    // Hover label
     label: `<div style="
       background: rgba(10,10,15,0.95);
       border: 1px solid rgba(196,163,90,0.3);
@@ -58,6 +81,7 @@ export function EarthGlobe() {
   }));
 
   return (
+    // @ts-expect-error — pointThreeObject exists but types are outdated
     <Globe
       ref={globeRef}
       width={size.w}
@@ -77,6 +101,7 @@ export function EarthGlobe() {
       pointResolution={6}
       pointsMerge={false}
       pointLabel="label"
+      pointThreeObject={createLighthouse}
     />
   );
 }
