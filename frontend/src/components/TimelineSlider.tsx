@@ -23,8 +23,9 @@ export function TimelineSlider() {
       display: 'flex',
       alignItems: 'center',
       gap: 16,
-      background: 'rgba(255,255,255,0.15)',
+      background: 'rgba(255,255,255,0.06)',
       backdropFilter: 'blur(16px)',
+      border: '1px solid rgba(255,255,255,0.06)',
       borderRadius: 9999,
       padding: '12px 24px',
       boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
@@ -43,7 +44,7 @@ export function TimelineSlider() {
           justifyContent: 'center',
           cursor: 'pointer',
           border: 'none',
-          background: isLive ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.15)',
+          background: isLive ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.08)',
           color: isLive ? '#6ee7b7' : '#a1a1aa',
           transition: 'all 0.3s',
         }}
@@ -61,7 +62,7 @@ export function TimelineSlider() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: 'rgba(255,255,255,0.15)',
+          background: 'rgba(255,255,255,0.06)',
           color: '#a1a1aa',
           border: 'none',
           cursor: 'pointer',
@@ -70,7 +71,7 @@ export function TimelineSlider() {
         <RotateCcw style={{ width: 12, height: 12 }} />
       </button>
 
-      <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.15)' }} />
+      <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.06)' }} />
 
       {/* Slider */}
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 12, fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 600, color: '#71717a' }}>
@@ -87,7 +88,7 @@ export function TimelineSlider() {
             style={{
               width: '100%',
               height: 2,
-              background: `linear-gradient(to right, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.15) ${timelinePercent}%, rgba(255,255,255,0.15) ${timelinePercent}%, rgba(255,255,255,0.15) 100%)`,
+              background: `linear-gradient(to right, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.12) ${timelinePercent}%, rgba(255,255,255,0.04) ${timelinePercent}%, rgba(255,255,255,0.04) 100%)`,
               borderRadius: 1,
               cursor: 'ew-resize',
               outline: 'none',

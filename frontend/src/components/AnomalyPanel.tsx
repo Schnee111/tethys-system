@@ -14,8 +14,9 @@ export function AnomalyPanel() {
     <div style={{
       padding: '14px',
       borderRadius: '16px',
-      background: 'rgba(255,255,255,0.15)',
+      background: 'rgba(255,255,255,0.06)',
       backdropFilter: 'blur(16px)',
+      border: '1px solid rgba(255,255,255,0.06)',
       textAlign: 'left',
       flex: '1 1 0',
       minHeight: 0,
