@@ -59,7 +59,7 @@ export default function App() {
 
       {/* Overlays — on top of globe, behind panels */}
       <div style={{
-        position: 'fixed', inset: 0, zIndex: 1, pointerEvents: 'none',
+        position: 'fixed', inset: 0, zIndex: 5, pointerEvents: 'none',
         background: `
           radial-gradient(circle at center, transparent 30%, rgba(2,2,8,0.6) 80%),
           linear-gradient(to bottom, rgba(0,0,0,0.3), transparent 20%, transparent 80%, rgba(0,0,0,0.5))
