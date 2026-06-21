@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, useCallback } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import Globe from 'react-globe.gl';
 import { useDataStore } from '../stores/dataStore';
 
@@ -14,7 +14,6 @@ export function EarthGlobe() {
   const globeRef = useRef<any>(null);
   const { events } = useDataStore();
   const [size, setSize] = useState({ w: window.innerWidth, h: window.innerHeight });
-  const autoRotateRef = useRef(true);
 
   useEffect(() => {
     const onResize = () => setSize({ w: window.innerWidth, h: window.innerHeight });
@@ -27,26 +26,35 @@ export function EarthGlobe() {
     if (!globe) return;
     globe.controls().autoRotate = true;
     globe.controls().autoRotateSpeed = 0.2;
-
-    // Stop rotation on hover, resume on leave
-    const container = globe.renderer()?.domElement?.parentElement;
-    if (container) {
-      container.addEventListener('mouseenter', () => {
-        globe.controls().autoRotate = false;
-      });
-      container.addEventListener('mouseleave', () => {
-        globe.controls().autoRotate = true;
-      });
-    }
   }, []);
 
+  // Points: thin pillars (line-like) with small cap
   const points = events.map((e) => ({
     lat: e.latitude,
     lng: e.longitude,
-    size: Math.max(0.2, (e.magnitude || 2) * 0.08),
+    altitude: 0.01 + (e.magnitude || 2) * 0.005,  // taller for bigger quakes
+    size: 0.08,  // thin radius = looks like a line
     color: getColor(e.magnitude || 2),
     event: e,
-    label: `M${e.magnitude?.toFixed(1)} — ${e.location}\nDepth: ${e.depth_km?.toFixed(0) || '?'}km`,
+    // Hover label
+    label: `<div style="
+      background: rgba(10,10,15,0.95);
+      border: 1px solid rgba(196,163,90,0.3);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: #e0e6ed;
+      line-height: 1.6;
+      white-space: nowrap;
+    ">
+      <div style="font-weight:600;color:#c4a35a;margin-bottom:4px;">
+        M${e.magnitude?.toFixed(1)} — ${e.location}
+      </div>
+      <div style="color:#999;font-size:10px;">
+        Depth: ${e.depth_km?.toFixed(1) || '?'}km · ${e.domain}
+      </div>
+    </div>`,
   }));
 
   return (
@@ -63,10 +71,10 @@ export function EarthGlobe() {
       pointsData={points}
       pointLat="lat"
       pointLng="lng"
-      pointAltitude={0.01}
+      pointAltitude="altitude"
       pointColor="color"
       pointRadius="size"
-      pointResolution={32}
+      pointResolution={6}
       pointsMerge={false}
       pointLabel="label"
     />
