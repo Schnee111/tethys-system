@@ -7,6 +7,7 @@ Renamed from "Threat" to "Activity". This is observation, not prediction.
 """
 
 import hashlib
+import json
 import logging
 from datetime import UTC, datetime
 
@@ -209,10 +210,10 @@ async def store_assessment(pool: asyncpg.Pool, assessment: dict) -> None:
             assessment["activity_score"],
             assessment["confidence"],
             assessment["coverage"],
-            assessment["score_breakdown"],
+            json.dumps(assessment["score_breakdown"]),
             assessment["active_anomalies"],
             assessment["active_correlations"],
             assessment["domains_affected"],
             assessment["summary"],
-            assessment,
+            json.dumps(assessment, default=str),
         )
