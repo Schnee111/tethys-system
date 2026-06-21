@@ -14,10 +14,10 @@ export function AnomalyPanel() {
     <div style={{
       padding: '14px',
       borderRadius: '16px',
-      background: 'rgba(255,255,255,0.12)',
+      background: 'rgba(255,255,255,0.15)',
       backdropFilter: 'blur(16px)',
       textAlign: 'left',
-      boxShadow: '0 25px 50px -12px rgba(0,0,0,0.4)',
+      ,
       flex: '1 1 0',
       minHeight: 0,
       overflow: 'hidden',

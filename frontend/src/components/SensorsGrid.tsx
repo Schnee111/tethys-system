@@ -16,12 +16,12 @@ export function SensorsGrid() {
     <div style={{
       padding: '14px',
       borderRadius: '16px',
-      background: 'rgba(255,255,255,0.12)',
+      background: 'rgba(255,255,255,0.15)',
       backdropFilter: 'blur(16px)',
       textAlign: 'left',
       fontSize: 10,
       color: '#71717a',
-      boxShadow: '0 25px 50px -12px rgba(0,0,0,0.4)',
+      ,
       flexShrink: 0,
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>

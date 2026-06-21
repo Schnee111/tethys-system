@@ -18,7 +18,7 @@ export function CategoryFilter({ activeCategories, onToggle }: CategoryFilterPro
       bottom: 48,
       left: 48,
       zIndex: 40,
-      background: 'rgba(255,255,255,0.12)',
+      background: 'rgba(255,255,255,0.15)',
       backdropFilter: 'blur(16px)',
       borderRadius: 9999,
       padding: '12px 24px',
