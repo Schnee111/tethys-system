@@ -54,16 +54,10 @@ export default function App() {
 
   return (
     <>
-      {/* Globe — IS the background, fills entire viewport */}
+      {/* Globe — IS the background, fills entire viewport, provides starfield + atmosphere */}
       <EarthGlobe />
 
-      {/* Vignette — darkens edges, focuses attention on center Earth */}
-      <div style={{
-        position: 'fixed', inset: 0, zIndex: 5, pointerEvents: 'none',
-        background: 'radial-gradient(ellipse at center, transparent 40%, rgba(2,2,8,0.7) 100%)',
-      }} />
-
-      {/* UI Layer — on top of everything */}
+      {/* UI Layer — floating over globe */}
       <div style={{ position: 'fixed', inset: 0, zIndex: 10, pointerEvents: 'none' }}>
         {/* Header */}
         <header style={{ position: 'absolute', top: 32, left: 48, display: 'flex', alignItems: 'center', gap: 24, pointerEvents: 'auto' }}>

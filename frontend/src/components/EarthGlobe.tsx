@@ -20,12 +20,6 @@ export function EarthGlobe() {
     if (!globe) return;
     globe.controls().autoRotate = true;
     globe.controls().autoRotateSpeed = 0.2;
-
-    // Add glow effect to the canvas via CSS filter
-    const canvas = globe.renderer()?.domElement;
-    if (canvas) {
-      canvas.style.filter = 'drop-shadow(0 0 80px rgba(56,189,248,0.15)) drop-shadow(0 0 40px rgba(99,102,241,0.1))';
-    }
   }, []);
 
   const points = events.map((e) => ({
@@ -45,8 +39,8 @@ export function EarthGlobe() {
       bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
       backgroundImageUrl="//unpkg.com/three-globe/example/img/night-sky.png"
       showAtmosphere={true}
-      atmosphereColor="#1a3a6a"
-      atmosphereAltitude={0.15}
+      atmosphereColor="#38bdf8"
+      atmosphereAltitude={0.2}
       pointsData={points}
       pointLat="lat"
       pointLng="lng"
