@@ -53,50 +53,9 @@ export default function App() {
   }, []);
 
   return (
-    <div style={{ position: 'fixed', inset: 0, width: '100vw', height: '100vh', overflow: 'hidden', background: '#020205', color: '#e0e6ed', fontFamily: 'var(--font-sans)' }}>
-      {/* Background: CSS gradient starfield + globe */}
+    <div style={{ position: 'fixed', inset: 0, width: '100vw', height: '100vh', overflow: 'hidden', background: '#000011', color: '#e0e6ed', fontFamily: 'var(--font-sans)' }}>
+      {/* Globe — fills entire viewport, provides its own starfield background */}
       <div style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
-        {/* Deep space base */}
-        <div style={{ position: 'absolute', inset: 0, background: '#020208' }} />
-
-        {/* Star dots via CSS radial gradients */}
-        <div style={{
-          position: 'absolute', inset: 0,
-          backgroundImage: `
-            radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.8), transparent),
-            radial-gradient(1.5px 1.5px at 25% 35%, rgba(255,255,255,0.6), transparent),
-            radial-gradient(1px 1px at 40% 8%, rgba(255,255,255,0.7), transparent),
-            radial-gradient(2px 2px at 55% 45%, rgba(255,255,255,0.5), transparent),
-            radial-gradient(1px 1px at 70% 20%, rgba(255,255,255,0.8), transparent),
-            radial-gradient(1.5px 1.5px at 85% 60%, rgba(255,255,255,0.6), transparent),
-            radial-gradient(1px 1px at 15% 75%, rgba(255,255,255,0.7), transparent),
-            radial-gradient(1px 1px at 90% 10%, rgba(255,255,255,0.5), transparent),
-            radial-gradient(1.5px 1.5px at 30% 90%, rgba(255,255,255,0.6), transparent),
-            radial-gradient(1px 1px at 65% 80%, rgba(255,255,255,0.4), transparent)
-          `,
-          backgroundSize: '600px 600px',
-          opacity: 0.5,
-        }} />
-
-        {/* Atmospheric glow */}
-        <div style={{
-          position: 'absolute', inset: 0,
-          background: 'radial-gradient(circle at center, rgba(56,189,248,0.15), rgba(34,197,94,0.04), transparent 65%)',
-          filter: 'blur(64px)',
-        }} />
-        <div style={{
-          position: 'absolute', inset: 0,
-          background: 'radial-gradient(circle at center, rgba(99,102,241,0.12), transparent 55%)',
-          filter: 'blur(40px)',
-        }} />
-
-        {/* Vignette */}
-        <div style={{
-          position: 'absolute', inset: 0,
-          background: 'radial-gradient(circle at center, transparent 30%, rgba(2,2,8,0.85) 90%)',
-        }} />
-
-        {/* Globe — fills entire viewport */}
         <EarthGlobe />
       </div>
 
@@ -131,14 +90,14 @@ export default function App() {
         </div>
       </div>
 
-      {/* Left panel — floating over globe */}
+      {/* Left panel */}
       <aside style={{ position: 'fixed', left: 48, top: 112, bottom: 112, width: 320, zIndex: 30, display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto' }}>
         <ActivityCard />
         <AnomalyPanel />
         <SensorsGrid />
       </aside>
 
-      {/* Right panel — floating over globe */}
+      {/* Right panel */}
       <aside style={{ position: 'fixed', right: 48, top: 112, bottom: 112, width: 320, zIndex: 30, display: 'flex', flexDirection: 'column', gap: 16, padding: 20, borderRadius: 16, background: 'rgba(255,255,255,0.035)', backdropFilter: 'blur(64px)', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.4)' }}>
         <LiveFeed />
       </aside>
