@@ -1,7 +1,7 @@
 import { useDataStore } from '../../stores/dataStore';
 
 export function AnomalyPanel() {
-  const { anomalies } = useDataStore();
+  const { anomalies, isLoading } = useDataStore();
 
   return (
     <div className="flex flex-col">
@@ -11,23 +11,29 @@ export function AnomalyPanel() {
         </span>
       </div>
       <div className="space-y-2 overflow-y-auto scrollbar-none max-h-64">
-        {anomalies.slice(0, 20).map((a) => (
-          <div
-            key={a.anomaly_id}
-            className="p-3 rounded-lg bg-white/[0.02] border-l-2 hover:bg-white/[0.04] transition-colors cursor-pointer"
-            style={{ borderLeftColor: getSeverityColor(a.severity) }}
-          >
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[9px] font-mono font-bold tracking-widest uppercase text-zinc-400">
-                {a.domain}
-              </span>
-              <span className="text-[9px] font-mono text-zinc-500">
-                z={a.z_score?.toFixed(1)}
-              </span>
+        {isLoading ? (
+          <div className="text-[11px] text-zinc-500 p-3">Loading anomalies...</div>
+        ) : anomalies.length === 0 ? (
+          <div className="text-[11px] text-zinc-500 p-3">No anomalies detected</div>
+        ) : (
+          anomalies.slice(0, 20).map((a) => (
+            <div
+              key={a.anomaly_id}
+              className="p-3 rounded-lg bg-white/[0.02] border-l-2 hover:bg-white/[0.04] transition-colors cursor-pointer"
+              style={{ borderLeftColor: getSeverityColor(a.severity) }}
+            >
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[9px] font-mono font-bold tracking-widest uppercase text-zinc-400">
+                  {a.domain}
+                </span>
+                <span className="text-[9px] font-mono text-zinc-500">
+                  z={a.z_score?.toFixed(1)}
+                </span>
+              </div>
+              <p className="text-[12px] text-zinc-300">{a.description}</p>
             </div>
-            <p className="text-[12px] text-zinc-300">{a.description}</p>
-          </div>
-        ))}
+          ))
+        )}
       </div>
     </div>
   );

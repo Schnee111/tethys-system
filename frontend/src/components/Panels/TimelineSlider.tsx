@@ -4,7 +4,7 @@ export function TimelineSlider() {
   const { timelinePercent, setTimelinePercent, isLive, setLive } = useGlobeStore();
 
   return (
-    <div className="flex items-center gap-4 px-6 py-3 bg-white/[0.03] backdrop-blur-xl border-t border-white/[0.05] z-20 relative">
+    <div className="flex items-center gap-4 px-6 py-3 bg-white/[0.02] z-20 relative">
       <span className="font-mono text-[10px] text-zinc-500 min-w-[60px]">Jun 14</span>
 
       <div className="flex-1 relative">
@@ -33,8 +33,8 @@ export function TimelineSlider() {
         }}
         className={`font-mono text-[10px] tracking-widest uppercase px-3 py-1 rounded-full transition-colors cursor-pointer ${
           isLive
-            ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-            : 'bg-white/5 text-zinc-500 hover:text-white border border-white/10'
+            ? 'bg-emerald-500/15 text-emerald-400'
+            : 'bg-white/5 text-zinc-500 hover:text-white'
         }`}
       >
         LIVE

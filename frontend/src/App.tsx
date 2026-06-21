@@ -38,7 +38,7 @@ export default function App() {
     };
 
     fetchData();
-    const interval = setInterval(fetchData, 30000); // Refresh every 30s
+    const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -53,7 +53,7 @@ export default function App() {
       {/* Main content */}
       <div className="flex-1 flex overflow-hidden relative z-10">
         {/* Left panel — Activity + Anomalies */}
-        <aside className="w-72 flex flex-col gap-3 p-4 overflow-y-auto scrollbar-none">
+        <aside className="w-72 flex flex-col gap-3 p-4 overflow-y-auto scrollbar-none bg-white/[0.01]">
           <ActivityCard />
           <AnomalyPanel />
         </aside>
@@ -64,7 +64,7 @@ export default function App() {
         </main>
 
         {/* Right panel — Live Feed */}
-        <aside className="w-80 flex flex-col p-4 overflow-hidden">
+        <aside className="w-80 flex flex-col p-4 overflow-hidden bg-white/[0.01]">
           <LiveFeed />
         </aside>
       </div>
