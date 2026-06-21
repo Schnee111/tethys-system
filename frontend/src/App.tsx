@@ -11,6 +11,72 @@ import { SensorsGrid } from './components/SensorsGrid';
 import { CategoryFilter } from './components/CategoryFilter';
 import { TimelineSlider } from './components/TimelineSlider';
 
+// Inline styles as safety net — if Tailwind CDN fails, layout still works
+const FULLSCREEN: React.CSSProperties = {
+  position: 'fixed',
+  inset: 0,
+  width: '100vw',
+  height: '100vh',
+  overflow: 'hidden',
+};
+
+const LEFT_PANEL: React.CSSProperties = {
+  position: 'fixed',
+  left: 48,
+  top: 112,
+  bottom: 112,
+  width: 320,
+  zIndex: 30,
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 16,
+  overflowY: 'auto',
+};
+
+const RIGHT_PANEL: React.CSSProperties = {
+  position: 'fixed',
+  right: 48,
+  top: 112,
+  bottom: 112,
+  width: 320,
+  zIndex: 30,
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 16,
+  padding: 20,
+  borderRadius: 16,
+  background: 'rgba(255,255,255,0.035)',
+  backdropFilter: 'blur(64px)',
+  WebkitBackdropFilter: 'blur(64px)',
+  boxShadow: '0 25px 50px -12px rgba(0,0,0,0.4)',
+};
+
+const HEADER: React.CSSProperties = {
+  position: 'fixed',
+  top: 32,
+  left: 48,
+  zIndex: 50,
+  display: 'flex',
+  alignItems: 'center',
+  gap: 24,
+};
+
+const HUD: React.CSSProperties = {
+  position: 'fixed',
+  top: 32,
+  right: 48,
+  zIndex: 50,
+  display: 'flex',
+  alignItems: 'center',
+  gap: 24,
+  padding: '4px 24px 4px 24px',
+  borderRadius: 9999,
+  background: 'rgba(255,255,255,0.035)',
+  backdropFilter: 'blur(64px)',
+  WebkitBackdropFilter: 'blur(64px)',
+  boxShadow: '0 25px 50px -12px rgba(0,0,0,0.4)',
+};
+
 export default function App() {
   const { setStatus, setEvents, setAnomalies, setActivity, setLoading } = useDataStore();
   const [activeCategories, setActiveCategories] = useState<Set<string>>(
@@ -54,67 +120,64 @@ export default function App() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#020205] text-zinc-100 flex flex-col justify-between overflow-hidden relative font-sans select-none">
-      {/* Background: Starfield + Globe */}
-      <main className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
-        <div className="absolute inset-0 bg-[#020208]" />
+    <div style={{ ...FULLSCREEN, background: '#020205', color: '#e0e6ed', fontFamily: 'var(--font-sans)' }}>
+      {/* Background: Starfield + Globe — fills entire viewport */}
+      <div style={{ ...FULLSCREEN, zIndex: 0, pointerEvents: 'none' }}>
+        <div style={{ position: 'absolute', inset: 0, background: '#020208' }} />
         <Starfield />
-        {/* Cinematic shadows */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/85 pointer-events-none" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_30%,rgba(2,2,8,0.92)_95%)] pointer-events-none" />
-        {/* Atmospheric glow */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(56,189,248,0.3),rgba(34,197,94,0.06),transparent_65%)] pointer-events-none blur-3xl animate-pulse" style={{ animationDuration: '8s' }} />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(99,102,241,0.22),transparent_55%)] pointer-events-none blur-2xl" />
-        {/* Globe */}
-        <div className="w-full h-full">
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.4), transparent, rgba(0,0,0,0.85))' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at center, transparent 30%, rgba(2,2,8,0.92) 95%)' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at center, rgba(56,189,248,0.3), rgba(34,197,94,0.06), transparent 65%)', filter: 'blur(64px)', animation: 'pulse 8s ease-in-out infinite' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at center, rgba(99,102,241,0.22), transparent 55%)', filter: 'blur(40px)' }} />
+        <div style={{ width: '100%', height: '100%' }}>
           <EarthGlobe />
         </div>
-      </main>
+      </div>
 
       {/* Header — top left */}
-      <header className="fixed top-8 left-12 z-50 flex items-center gap-6">
-        <h1 className="font-sans text-2xl font-light tracking-[0.35em] text-white uppercase select-none">
+      <header style={HEADER}>
+        <h1 style={{ fontSize: '1.5rem', fontWeight: 300, letterSpacing: '0.35em', color: '#fff', textTransform: 'uppercase' }}>
           TETHYS
         </h1>
-        <div className="flex items-center gap-2 bg-emerald-500/10 px-2.5 py-0.5 rounded-full select-none">
-          <div className="w-1.5 h-1.5 rounded-full bg-green-400 shadow-[0_0_10px_rgba(74,222,128,0.5)] animate-pulse" />
-          <span className="font-mono text-[9px] tracking-widest text-green-400 uppercase font-semibold">NOMINAL</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(16,185,129,0.1)', padding: '2px 10px', borderRadius: 9999 }}>
+          <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#4ade80', boxShadow: '0 0 10px rgba(74,222,128,0.5)', animation: 'pulse 2s infinite' }} />
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.1em', color: '#4ade80', textTransform: 'uppercase', fontWeight: 600 }}>
+            NOMINAL
+          </span>
         </div>
       </header>
 
       {/* HUD — top right */}
-      <div className="fixed top-8 right-12 z-50 flex items-center gap-6 text-zinc-400/60 pl-6 pr-2 py-1 rounded-full bg-white/[0.035] backdrop-blur-3xl shadow-2xl shadow-black/40">
-        <span className="font-mono text-[10px] tracking-wider text-zinc-500 uppercase mr-1 select-none">OPERATOR: DAFFA</span>
-        <button className="hover:text-white transition-colors duration-300 flex items-center p-1 cursor-pointer" title="Signal Status">
-          <Wifi className="w-4 h-4 text-emerald-400/80 animate-pulse" />
-        </button>
-        <button className="hover:text-white transition-colors duration-300 flex items-center p-1 relative cursor-pointer" title="Notifications">
-          <Bell className="w-4 h-4" />
-          <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-rose-500 rounded-full" />
-        </button>
-        <button className="hover:text-white transition-colors duration-300 flex items-center p-1 cursor-pointer" title="Settings">
-          <Settings className="w-4 h-4" />
-        </button>
-        <span className="w-px h-3.5 bg-white/5" />
-        <div className="flex items-center gap-2 p-1.5 px-3 rounded-full bg-white/5 text-zinc-300" title="Account">
-          <User className="w-3.5 h-3.5 text-zinc-400" />
-          <span className="text-[10px] uppercase font-mono tracking-widest hidden sm:inline">SECURE</span>
+      <div style={HUD}>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.05em', color: '#71717a', textTransform: 'uppercase' }}>
+          OPERATOR: DAFFA
+        </span>
+        <Wifi style={{ width: 16, height: 16, color: '#34d399' }} />
+        <div style={{ position: 'relative' }}>
+          <Bell style={{ width: 16, height: 16, color: '#71717a' }} />
+          <span style={{ position: 'absolute', top: 1, right: 1, width: 6, height: 6, background: '#f43f5e', borderRadius: '50%' }} />
+        </div>
+        <Settings style={{ width: 16, height: 16, color: '#71717a' }} />
+        <div style={{ width: 1, height: 14, background: 'rgba(255,255,255,0.05)' }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderRadius: 9999, background: 'rgba(255,255,255,0.05)' }}>
+          <User style={{ width: 14, height: 14, color: '#71717a' }} />
+          <span style={{ fontSize: 10, textTransform: 'uppercase', fontFamily: 'var(--font-mono)', letterSpacing: '0.1em', color: '#a1a1aa' }}>SECURE</span>
         </div>
       </div>
 
-      {/* Left panel — floating */}
-      <aside className="fixed left-12 top-28 bottom-28 z-30 flex flex-col gap-4 w-80 overflow-y-auto scrollbar-none pr-1 transition-all duration-500" style={{ scrollbarWidth: 'none' }}>
+      {/* Left panel */}
+      <aside style={LEFT_PANEL}>
         <ActivityCard />
         <AnomalyPanel />
         <SensorsGrid />
       </aside>
 
-      {/* Right panel — floating */}
-      <aside className="fixed right-12 top-28 bottom-28 z-30 flex flex-col gap-4 w-80 bg-white/[0.035] backdrop-blur-3xl px-5 py-5 rounded-2xl shadow-2xl shadow-black/40 transition-all duration-500">
+      {/* Right panel */}
+      <aside style={RIGHT_PANEL}>
         <LiveFeed />
       </aside>
 
-      {/* Category filter dock — bottom left */}
+      {/* Category filter — bottom left */}
       <CategoryFilter activeCategories={activeCategories} onToggle={toggleCategory} />
 
       {/* Timeline — bottom center */}
