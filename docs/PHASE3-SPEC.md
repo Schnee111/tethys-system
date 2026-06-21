@@ -15,15 +15,16 @@ Phase 3 builds the interactive 3D globe dashboard — the visual heart of Tethys
 ```
 FRAMEWORK           TECHNOLOGY          WHY
 ──────────────────  ──────────────────  ──────────────────────────
-UI Framework        React 18 + TSX      Mature, type-safe, ecosystem
-3D Globe            globe.gl            Best data viz globe lib
+UI Framework        React 19 + TSX      Latest stable, use() hook
+3D Globe            globe.gl 2.38       Best data viz globe lib
                    (Three.js wrapper)   Built on Three.js, high perf
-State Management    Zustand             Lightweight, no boilerplate
-Styling             Tailwind CSS        Dark theme, utility-first
-Build Tool          Vite                Fast HMR, modern
+2D Map              Leaflet + react-leaflet  Street-level detail fallback
+State Management    Zustand 5           Lightweight, useShallow()
+Styling             Tailwind CSS 4      Dark theme, CSS-based config
+Build Tool          Vite 8              Fast HMR, Rolldown bundler
 HTTP Client         axios               Simple, interceptors
 WebSocket           Native WS API       Real-time updates
-Charts              Recharts            Lightweight, React-native
+Charts              Recharts 3          Lightweight, React-native
 Hosting             Cloudflare Pages    Free, global CDN, HTTPS
 ```
 
@@ -560,30 +561,136 @@ const MAX_POINTS = isMobile ? 500 : 10000;
 const ENABLE_PARTICLES = !isMobile;
 ```
 
-## 2D Fallback (Leaflet)
+## Dual View: Globe + Map (globe.gl + Leaflet)
+
+globe.gl is a data visualization globe, NOT a map. When you zoom in,
+the Earth texture gets blurrier — no street-level detail.
+
+**Solution: Dual-view architecture.** Globe for planetary overview,
+Leaflet map for location detail. Separate components sharing state
+through Zustand.
+
+```
+┌─────────────────────────────────────────────┐
+│                App.tsx                       │
+│                                             │
+│  ┌──────────────┐    ┌──────────────┐       │
+│  │  Globe View   │    │  Map View    │       │
+│  │  (globe.gl)   │    │  (Leaflet)   │       │
+│  │               │    │              │       │
+│  │  Overview:    │    │  Detail:     │       │
+│  │  whole planet │    │  zoomed area │       │
+│  │  all events   │    │  street-level│       │
+│  └──────┬───────┘    └──────┬───────┘       │
+│         │                   │               │
+│         └───────┬───────────┘               │
+│                 │                           │
+│         ┌───────┴───────┐                   │
+│         │  Zustand Store │                   │
+│         │ • selectedEvent│                   │
+│         │ • viewMode     │                   │
+│         │ • mapCenter    │                   │
+│         │ • mapZoom      │                   │
+│         └────────────────┘                   │
+└─────────────────────────────────────────────┘
+```
+
+**User flow:**
+1. User sees globe with earthquake dots
+2. Clicks an earthquake in Japan
+3. Detail panel opens (magnitude, depth, place)
+4. "Zoom to Location" button appears
+5. Click → switches to Leaflet map at [35.68, 139.69] zoom 10
+6. User explores at street/terrain level
+7. "Back to Globe" button → returns to 3D view
 
 ```tsx
-// components/Fallback/FallbackMap2D.tsx
+// App.tsx — view routing
+function App() {
+  const { viewMode } = useGlobeStore();
+
+  return (
+    <div className="h-screen">
+      {viewMode === 'globe' ? <EarthGlobe /> : <LeafletMap />}
+      <SidePanel />
+    </div>
+  );
+}
+
+// LeafletMap.tsx — detail view
 import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet';
 
-export function FallbackMap2D({ events }) {
+export function LeafletMap() {
+  const { mapCenter, mapZoom, selectedEvent } = useGlobeStore();
+
   return (
-    <MapContainer center={[0, 0]} zoom={2} style={{ height: '100vh' }} data-testid="fallback-map">
-      <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
-      {events.map(event => (
+    <MapContainer
+      center={mapCenter || [0, 0]}
+      zoom={mapZoom || 2}
+      style={{ height: '100vh' }}
+      data-testid="detail-map"
+    >
+      <TileLayer
+        url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+        attribution='&copy; <a href="https://www.openstreetmap.org/">OSM</a>'
+      />
+      {selectedEvent && (
         <CircleMarker
-          key={event.id}
-          center={[event.latitude, event.longitude]}
-          radius={event.magnitude || 2}
-          fillColor={severityColor(event.severity)}
-          fillOpacity={0.7}
+          center={[selectedEvent.latitude, selectedEvent.longitude]}
+          radius={selectedEvent.magnitude || 5}
+          fillColor={severityColor(selectedEvent.severity)}
+          fillOpacity={0.8}
+          color="#fff"
+          weight={1}
         >
-          <Popup>{event.place}</Popup>
+          <Popup>
+            <strong>{selectedEvent.place}</strong><br/>
+            Mag: {selectedEvent.magnitude}<br/>
+            Depth: {selectedEvent.depth_km} km
+          </Popup>
         </CircleMarker>
-      ))}
+      )}
     </MapContainer>
   );
 }
+
+// DetailPanel.tsx — "Zoom to Location" button
+<button onClick={() => {
+  setMapCenter([event.latitude, event.longitude]);
+  setMapZoom(10);
+  setViewMode('map');
+}}>
+  📍 Zoom to Location
+</button>
+```
+
+**What each view does:**
+
+```
+GLOBE VIEW (globe.gl):
+  ✓ See all earthquakes on the planet
+  ✓ See correlation arcs between domains
+  ✓ Rotate, zoom out for overview
+  ✓ Click events for quick info
+  ✗ Can't zoom past country level
+  ✗ No street/terrain detail
+
+MAP VIEW (Leaflet):
+  ✓ Zoom to street level
+  ✓ See terrain, roads, buildings
+  ✓ Satellite imagery (optional tiles)
+  ✓ Precise location
+  ✗ Only shows one area at a time
+  ✗ No 3D, no globe rotation
+```
+
+**Also serves as WebGL fallback:**
+```tsx
+// If WebGL not supported, default to map view
+if (!isWebGLSupported()) {
+  return <LeafletMap />;  // Works everywhere
+}
+```
 ```
 
 ---

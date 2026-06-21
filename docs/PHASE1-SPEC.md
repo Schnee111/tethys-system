@@ -1564,22 +1564,23 @@ joblib==1.4.0             # Isolation Forest model serialization
 # package.json dependencies (frontend — Phase 3)
 {
   "dependencies": {
-    "react": "^18.3.0",
-    "react-dom": "^18.3.0",
-    "react-globe.gl": "^2.28.0",
-    "three": "^0.168.0",
-    "zustand": "^4.5.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-globe.gl": "^2.38.0",
+    "three": "^0.183.0",
+    "zustand": "^5.0.0",
     "axios": "^1.7.0",
-    "recharts": "^2.12.0",
-    "leaflet": "^1.9.4",           # 2D fallback map
-    "react-leaflet": "^4.2.1"      # React wrapper for Leaflet
+    "recharts": "^3.0.0",
+    "leaflet": "^1.9.4",
+    "react-leaflet": "^4.2.1"
   },
   "devDependencies": {
     "typescript": "^5.5.0",
-    "vite": "^5.4.0",
-    "@types/react": "^18.3.0",
+    "vite": "^8.0.0",
+    "@types/react": "^19.0.0",
     "@types/leaflet": "^1.9.0",
-    "tailwindcss": "^3.4.0",
+    "tailwindcss": "^4.0.0",
+    "@tailwindcss/postcss": "^4.0.0",
     "jest": "^29.7.0",
     "@testing-library/react": "^16.0.0"
   }
