@@ -1,0 +1,26 @@
+# Tethys — Local Development Environment
+# Usage: docker compose up -d
+# Connect: psql -h localhost -U tethys -d tethys
+
+services:
+  timescaledb:
+    image: timescale/timescaledb:latest-pg16
+    container_name: tethys-db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: tethys
+      POSTGRES_PASSWORD: tethys_dev
+      POSTGRES_DB: tethys
+    volumes:
+      - tethys-data:/var/lib/postgresql/data
+      - ./backend/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tethys -d tethys"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  tethys-data:
