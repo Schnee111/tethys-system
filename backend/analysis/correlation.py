@@ -1,8 +1,15 @@
 """Tethys — Cross-Domain Correlation Engine.
 
 Discovers correlations between different planetary data streams.
-Uses Pearson + Spearman correlation with time lag testing and
-Benjamini-Hochberg FDR correction for multiple testing.
+Uses Pearson + Spearman correlation with time lag testing,
+Granger causality for directional inference, and
+Benjamini-Yekutieli FDR correction for multiple testing.
+
+Scientific basis:
+- Marchitelli et al. (2020) Nature Sci Reports: solar proton density → M>5 earthquakes, ~1 day lag
+- Subramanian & Rahman (2025) Results in Earth Sciences: CME → M>5 earthquakes, 1-3 day lag
+- Altaibek et al. (2024) Atmosphere: LSTM with proton density predicts seismic activity
+- Huzaimy & Yumoto (2011): solar wind & seismic activity, 0-7 day lags
 """
 
 import hashlib
@@ -26,7 +33,17 @@ CORRELATION_PAIRS = [
 ]
 
 # Lag windows to test (hours)
-LAG_WINDOWS = [0, 24, 48, 72]
+# Based on literature:
+# - Solar wind pressure: 0-48h (direct magnetosphere coupling)
+# - Geomagnetic storms: 1-7 days (storm recovery effects)
+# - Solar rotation: 27 days (long-term modulation — too long for hourly data)
+# Source: Huzaimy & Yumoto (2011), Marchitelli et al. (2020)
+LAG_WINDOWS = [0, 6, 12, 24, 48, 72, 120, 168]
+
+# Minimum effect size threshold
+# r=0.05 with N=10000 is "significant" but physically meaningless.
+# |r| > 0.1 is the minimum for meaningful cross-domain correlation.
+MIN_EFFECT_SIZE = 0.1
 
 # Continuous metrics that need first-order differencing
 CONTINUOUS_METRICS = {
@@ -50,7 +67,7 @@ DOMAIN_TABLES = {
 
 
 class CorrelationEngine:
-    """Discover cross-domain correlations with lag testing."""
+    """Discover cross-domain correlations with lag testing and Granger causality."""
 
     async def compute_correlation(
         self,
@@ -63,7 +80,8 @@ class CorrelationEngine:
     ) -> dict | None:
         """Compute correlation between two metrics with lag testing.
 
-        Returns the strongest correlation across all lag windows.
+        Tests multiple lag windows and returns the strongest correlation.
+        Includes Granger causality test for directional inference.
         """
         results = []
 
@@ -105,6 +123,17 @@ class CorrelationEngine:
             except ValueError:
                 continue
 
+            # Minimum effect size filter
+            if abs(pearson_r) < MIN_EFFECT_SIZE and abs(spearman_rho) < MIN_EFFECT_SIZE:
+                continue
+
+            # Granger causality test (if enough samples)
+            granger_p = None
+            granger_causal = False
+            if len(values_a) > 50:
+                granger_p = self._granger_test(values_a, values_b)
+                granger_causal = granger_p is not None and granger_p < 0.05
+
             correlation_id = hashlib.md5(
                 f"{domain_a}:{metric_a}:{domain_b}:{metric_b}:{lag_hours}".encode()
             ).hexdigest()[:12]
@@ -122,6 +151,8 @@ class CorrelationEngine:
                     "p_value": float(min(pearson_p, spearman_p)),
                     "sample_size": len(values_a),
                     "correlation_id": correlation_id,
+                    "granger_p": float(granger_p) if granger_p is not None else None,
+                    "granger_causal": granger_causal,
                 }
             )
 
@@ -131,8 +162,43 @@ class CorrelationEngine:
         # Return strongest correlation across lag windows
         return max(results, key=lambda r: abs(r["pearson_r"]))
 
+    @staticmethod
+    def _granger_test(values_a: np.ndarray, values_b: np.ndarray, maxlag: int = 12) -> float | None:
+        """Run Granger causality test: does past of A improve prediction of B?
+
+        Returns minimum p-value across lag orders, or None if test fails.
+        Uses F-test from statsmodels.tsa.stattools.grangercausalitytests.
+
+        Note: Granger assumes LINEAR relationships. Solar wind forcing may
+        be nonlinear — Transfer Entropy would be better for that (Priority 2).
+        """
+        try:
+            from statsmodels.tsa.stattools import grangercausalitytests
+
+            # Stack [B, A] — tests if A Granger-causes B
+            data = np.column_stack([values_b, values_a])
+            results = grangercausalitytests(data, maxlag=maxlag, verbose=False)
+
+            # Extract minimum p-value across lag orders
+            min_p = 1.0
+            for lag_order in range(1, maxlag + 1):
+                p_val = results[lag_order][0]["ssr_ftest"][1]
+                min_p = min(min_p, p_val)
+
+            return min_p
+        except Exception:
+            return None
+
     async def run_all(self, pool: asyncpg.Pool) -> list[dict]:
-        """Run all correlation pairs and apply FDR correction."""
+        """Run all correlation pairs and apply FDR correction.
+
+        Uses Benjamini-Yekutieli (BY) instead of Benjamini-Hochberg (BH).
+        BY is valid under ARBITRARY dependence structure. Our lag-correlated
+        tests violate BH's independence assumption.
+
+        Source: Benjamini & Yekutieli (2001) — "The control of the false
+        discovery rate in multiple testing under dependency"
+        """
         results = []
         raw_pvals = []
 
@@ -147,15 +213,17 @@ class CorrelationEngine:
         if not raw_pvals:
             return []
 
-        # Apply Benjamini-Hochberg FDR correction
+        # Apply Benjamini-Yekutieli FDR correction
+        # BY is valid under arbitrary dependence (our lag tests are dependent)
+        # BH assumes independence — inappropriate for correlated lag tests
         from statsmodels.stats.multitest import multipletests
 
-        reject, pvals_corrected, _, _ = multipletests(raw_pvals, alpha=0.05, method="fdr_bh")
+        reject, pvals_corrected, _, _ = multipletests(raw_pvals, alpha=0.05, method="fdr_by")
 
         for i, result in enumerate(results):
             result["p_value_corrected"] = float(pvals_corrected[i])
             result["is_significant"] = bool(reject[i])
-            result["fdr_method"] = "benjamini_hochberg"
+            result["fdr_method"] = "benjamini_yekutieli"
 
         return [r for r in results if r["is_significant"]]
 
@@ -173,6 +241,8 @@ class CorrelationEngine:
             return {}
 
         # For seismic: use energy proxy, not count
+        # Energy: M0 = 10^(1.5*M + 4.8) in Newton-meters
+        # Source: Kanamori (1977) — "The energy release in great earthquakes"
         if domain == "seismic" and metric == "event_count":
             select = "SUM(POWER(10, 1.5 * magnitude + 4.8)) AS value"
         else:

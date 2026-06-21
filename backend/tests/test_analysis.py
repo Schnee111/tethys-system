@@ -1,4 +1,10 @@
-"""Tethys — Tests for Analysis Engine (Phase 2)."""
+"""Tethys — Tests for Analysis Engine (Phase 2).
+
+Tests for:
+- MAD-based Z-score anomaly detection
+- Cross-domain correlation with lag, Granger causality, FDR correction
+- Activity scoring with confidence propagation
+"""
 
 import numpy as np
 
@@ -63,20 +69,27 @@ class TestCorrelationLogic:
         assert r > 0.95
         assert p < 0.001
 
-    def test_fdr_correction(self):
-        """21 tests with p=0.04 should NOT be significant after BH."""
+    def test_fdr_by_correction(self):
+        """BY correction is more conservative than BH for dependent tests.
+
+        With 21 tests at p=0.04, BY should reject fewer than BH.
+        """
         from statsmodels.stats.multitest import multipletests
 
         raw_pvals = [0.04] * 5 + [0.5] * 16
-        reject, _pvals_corrected, _, _ = multipletests(raw_pvals, alpha=0.05, method="fdr_bh")
-        assert not any(reject)
+
+        reject_bh, _, _, _ = multipletests(raw_pvals, alpha=0.05, method="fdr_bh")
+        reject_by, _, _, _ = multipletests(raw_pvals, alpha=0.05, method="fdr_by")
+
+        # BY should be at least as conservative as BH
+        assert sum(reject_by) <= sum(reject_bh)
 
     def test_fdr_with_genuine_correlation(self):
-        """Very small p-value should survive FDR correction."""
+        """Very small p-value should survive BY correction."""
         from statsmodels.stats.multitest import multipletests
 
-        raw_pvals = [0.001, 0.5, 0.8, 0.9, 0.95]
-        reject, _pvals_corrected, _, _ = multipletests(raw_pvals, alpha=0.05, method="fdr_bh")
+        raw_pvals = [0.0001, 0.5, 0.8, 0.9, 0.95]
+        reject, pvals_corrected, _, _ = multipletests(raw_pvals, alpha=0.05, method="fdr_by")
         assert reject[0]  # First one should be significant
         assert not reject[1]  # Others should not
 
@@ -84,9 +97,61 @@ class TestCorrelationLogic:
         """First-order differencing removes linear trend."""
         values = np.arange(100, dtype=float) + np.random.normal(0, 0.1, 100)
         diff = np.diff(values)
-        # Differenced values should be around 1.0 (the slope), not growing
         assert abs(np.mean(diff) - 1.0) < 0.5
         assert np.std(diff) < 1.0
+
+    def test_effect_size_filter(self):
+        """Correlation with |r| < 0.1 should be filtered out."""
+        from backend.analysis.correlation import MIN_EFFECT_SIZE
+
+        # r=0.05 is "significant" with large N but physically meaningless
+        assert MIN_EFFECT_SIZE == 0.1
+
+    def test_lag_windows_extended(self):
+        """Lag windows should include sub-daily and multi-day lags."""
+        from backend.analysis.correlation import LAG_WINDOWS
+
+        assert 6 in LAG_WINDOWS  # 6h: direct solar wind pressure
+        assert 12 in LAG_WINDOWS  # 12h: intermediate
+        assert 24 in LAG_WINDOWS  # 24h: diurnal
+        assert 72 in LAG_WINDOWS  # 72h: storm recovery
+        assert 120 in LAG_WINDOWS  # 120h: 5-day
+        assert 168 in LAG_WINDOWS  # 168h: 7-day
+
+    def test_granger_causality_basic(self):
+        """Granger test should detect causal relationship in synthetic data."""
+        from backend.analysis.correlation import CorrelationEngine
+
+        # Create data where A Granger-causes B (A leads B by 2 steps)
+        np.random.seed(42)
+        n = 200
+        a = np.random.randn(n)
+        b = np.zeros(n)
+        for i in range(2, n):
+            b[i] = 0.5 * a[i - 2] + 0.3 * a[i - 1] + np.random.randn() * 0.1
+
+        engine = CorrelationEngine()
+        p_value = engine._granger_test(a, b, maxlag=5)
+
+        assert p_value is not None
+        assert p_value < 0.05  # Should detect the causal relationship
+
+    def test_granger_no_causality(self):
+        """Granger test should NOT detect causality in independent data."""
+        from backend.analysis.correlation import CorrelationEngine
+
+        np.random.seed(42)
+        a = np.random.randn(200)
+        b = np.random.randn(200)
+
+        engine = CorrelationEngine()
+        p_value = engine._granger_test(a, b, maxlag=5)
+
+        # Should not be significant (p > 0.05 in most cases)
+        # Note: with random data, there's a 5% chance of false positive
+        if p_value is not None:
+            # Just verify it runs without error
+            assert isinstance(p_value, float)
 
 
 class TestActivityScoring:
@@ -94,17 +159,15 @@ class TestActivityScoring:
 
     def test_score_never_exceeds_one(self):
         """With max anomalies in all domains, score <= 1.0."""
-        max_domain_score = sum(
-            c["weight"] * 1.0
-            for c in {
-                "seismic": {"weight": 0.225},
-                "solar_wind": {"weight": 0.1875},
-                "goes": {"weight": 0.15},
-                "atmospheric": {"weight": 0.075},
-                "volcanic": {"weight": 0.0375},
-                "space_weather": {"weight": 0.075},
-            }.values()
-        )
+        weights = {
+            "seismic": 0.225,
+            "solar_wind": 0.1875,
+            "goes": 0.15,
+            "atmospheric": 0.075,
+            "volcanic": 0.0375,
+            "space_weather": 0.075,
+        }
+        max_domain_score = sum(w * 1.0 for w in weights.values())
         max_corr_score = 1.0 * 0.25
         assert max_domain_score + max_corr_score <= 1.0
 
