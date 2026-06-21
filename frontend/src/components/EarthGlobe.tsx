@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import Globe from 'react-globe.gl';
 import { useDataStore } from '../stores/dataStore';
 import { useGlobeStore } from '../stores/globeStore';
@@ -7,6 +7,13 @@ export function EarthGlobe() {
   const globeRef = useRef<any>(null);
   const { events } = useDataStore();
   const { setSelectedEvent } = useGlobeStore();
+  const [size, setSize] = useState({ w: window.innerWidth, h: window.innerHeight });
+
+  useEffect(() => {
+    const onResize = () => setSize({ w: window.innerWidth, h: window.innerHeight });
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   useEffect(() => {
     const globe = globeRef.current;
@@ -24,24 +31,25 @@ export function EarthGlobe() {
   }));
 
   return (
-    <div className="w-full h-full">
-      <Globe
-        ref={globeRef}
-        globeImageUrl="//unpkg.com/three-globe/example/img/earth-blue-marble.jpg"
-        bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
-        backgroundImageUrl="//unpkg.com/three-globe/example/img/night-sky.png"
-        showAtmosphere={true}
-        atmosphereColor="#1a3a6a"
-        atmosphereAltitude={0.15}
-        pointsData={points}
-        pointLat="lat"
-        pointLng="lng"
-        pointAltitude={0.005}
-        pointColor="color"
-        pointRadius="size"
-        onPointClick={(p: any) => setSelectedEvent(p.event)}
-      />
-    </div>
+    <Globe
+      ref={globeRef}
+      width={size.w}
+      height={size.h}
+      globeImageUrl="//unpkg.com/three-globe/example/img/earth-blue-marble.jpg"
+      bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
+      backgroundImageUrl="//unpkg.com/three-globe/example/img/night-sky.png"
+      backgroundColor="rgba(0,0,0,0)"
+      showAtmosphere={true}
+      atmosphereColor="#1a3a6a"
+      atmosphereAltitude={0.15}
+      pointsData={points}
+      pointLat="lat"
+      pointLng="lng"
+      pointAltitude={0.005}
+      pointColor="color"
+      pointRadius="size"
+      onPointClick={(p: any) => setSelectedEvent(p.event)}
+    />
   );
 }
 
