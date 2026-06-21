@@ -32,7 +32,7 @@ input[type="range"]::-webkit-slider-thumb {
   border-radius: 50%;
   background: #fff;
   border: none;
-  margin-top: -4px; /* center on 2px track */
+  margin-top: -2px;
   box-shadow: 0 0 6px rgba(255,255,255,0.3);
 }
 
