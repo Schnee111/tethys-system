@@ -12,3 +12,7 @@ body {
   color: #e0e6ed;
   -webkit-font-smoothing: antialiased;
 }
+
+/* Hide scrollbar everywhere */
+::-webkit-scrollbar { display: none; }
+* { scrollbar-width: none; -ms-overflow-style: none; }
