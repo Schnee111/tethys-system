@@ -16,6 +16,15 @@ function formatTime(time: string): string {
   catch { return time?.substring(11, 16) || ''; }
 }
 
+function getMagnitudeColor(mag: number): string {
+  if (mag >= 6) return '#dc2626';
+  if (mag >= 5) return '#ef4444';
+  if (mag >= 4) return '#f59e0b';
+  if (mag >= 3) return '#fbbf24';
+  if (mag >= 2) return '#71717a';
+  return '#52525b';
+}
+
 export function LiveFeed() {
   const { events, isLoading } = useDataStore();
   const { activeCategories } = useGlobeStore();
@@ -128,7 +137,7 @@ export function LiveFeed() {
                     </span>
                   </div>
                   {event.magnitude && (
-                    <span style={{ fontSize: 9, color: '#52525b', fontFamily: 'var(--font-mono)' }}>
+                    <span style={{ fontSize: 9, color: getMagnitudeColor(event.magnitude), fontFamily: 'var(--font-mono)' }}>
                       M{event.magnitude.toFixed(1)}
                     </span>
                   )}

@@ -40,16 +40,22 @@ export function CategoryFilter({ activeCategories, onToggle }: CategoryFilterPro
               flexDirection: 'column',
               alignItems: 'center',
               gap: 4,
-              background: 'none',
+              background: isActive ? `${cat.color}18` : 'transparent',
+              boxShadow: isActive ? `0 0 20px ${cat.color}40, inset 0 0 12px ${cat.color}15` : 'none',
+              borderRadius: 6,
+              padding: '6px 12px',
               border: 'none',
+              borderBottomWidth: 2,
+              borderBottomStyle: 'solid',
+              borderBottomColor: isActive ? cat.color : 'transparent',
               cursor: 'pointer',
-              opacity: isActive ? 1 : 0.35,
+              opacity: isActive ? 1 : 0.3,
               transform: isActive ? 'scale(1.05)' : 'scale(1)',
-              transition: 'all 0.3s',
+              transition: 'all 0.3s ease',
             }}
           >
-            <Icon style={{ width: 16, height: 16, color: isActive ? cat.color : '#71717a' }} />
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.1em', color: '#d4d4d8', textTransform: 'uppercase', fontWeight: 700 }}>
+            <Icon style={{ width: 16, height: 16, color: isActive ? cat.color : '#52525b' }} />
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.1em', color: isActive ? '#e4e4e7' : '#71717a', textTransform: 'uppercase', fontWeight: 700 }}>
               {cat.label}
             </span>
           </button>
