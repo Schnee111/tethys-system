@@ -57,6 +57,38 @@ async def get_solar_wind_latest():
     return dict(row) if row else {}
 
 
+@router.get("/api/v1/solar-wind/history")
+async def get_solar_wind_history(
+    hours: int = Query(default=24, ge=1, le=168),
+):
+    """Solar wind time-series for charts."""
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            """
+            SELECT time, speed, density, bt, bz_gsm
+            FROM solar_wind
+            WHERE time > NOW() - make_interval(hours => $1)
+              AND speed IS NOT NULL
+            ORDER BY time ASC
+            """,
+            hours,
+        )
+    return {
+        "count": len(rows),
+        "readings": [
+            {
+                "time": r["time"].isoformat() if r["time"] else None,
+                "speed": r["speed"],
+                "density": r["density"],
+                "bt": r["bt"],
+                "bz_gsm": r["bz_gsm"],
+            }
+            for r in rows
+        ],
+    }
+
+
 @router.get("/api/v1/goes/xray")
 async def get_goes_xray(
     hours: int = Query(default=24, ge=1, le=168),

@@ -1,30 +1,27 @@
-import { useState, useEffect, useMemo } from 'react';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { useState, useEffect } from 'react';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { useGlassStyle } from '../utils/glass';
-import axios from 'axios';
+import { api } from '../api/client';
 
 export function SolarWindChart() {
   const glass = useGlassStyle();
   const [data, setData] = useState<any[]>([]);
 
   useEffect(() => {
-    // Fetch recent solar wind data from the DB via a custom endpoint
-    // For now, use the latest reading and generate mock trend
-    // TODO: add /api/v1/solar-wind/history endpoint
-    axios.get('/api/v1/solar-wind/latest').then((res) => {
-      if (res.data) {
-        // Generate 24h trend from single reading (placeholder)
-        const now = Date.now();
-        const points = [];
-        for (let i = 23; i >= 0; i--) {
-          const t = new Date(now - i * 3600000);
-          points.push({
-            time: t.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
-            speed: res.data.speed ? res.data.speed + (Math.random() - 0.5) * 50 : null,
-            density: res.data.density ? res.data.density + (Math.random() - 0.5) * 2 : null,
-          });
+    api.getSolarWindHistory({ hours: 24 }).then((res) => {
+      if (res?.readings?.length > 0) {
+        const points = res.readings.map((r: any) => ({
+          time: new Date(r.time).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
+          speed: r.speed,
+          density: r.density,
+        }));
+        // Downsample if too many points (max ~50 for chart readability)
+        if (points.length > 50) {
+          const step = Math.ceil(points.length / 50);
+          setData(points.filter((_: any, i: number) => i % step === 0));
+        } else {
+          setData(points);
         }
-        setData(points);
       }
     }).catch(() => {});
   }, []);
@@ -45,7 +42,7 @@ export function SolarWindChart() {
               tick={{ fontSize: 7, fill: '#3f3f46' }}
               axisLine={false}
               tickLine={false}
-              interval={5}
+              interval={Math.max(0, Math.floor(data.length / 6))}
             />
             <YAxis hide />
             <Tooltip
@@ -74,7 +71,6 @@ export function SolarWindChart() {
               strokeWidth={1.5}
               dot={false}
               name="Density (p/cm³)"
-              yAxisId={0}
             />
           </LineChart>
         </ResponsiveContainer>
