@@ -8,9 +8,8 @@ import { DOMAIN_COLORS } from '../utils/colors';
 const GLOBE_HOURS = 2;
 const FLY_ALTITUDE = 1.0;
 const FLY_DURATION = 1200;
-const GLOBE_RADIUS = 100; // default globe.gl radius in Three.js units
+const GLOBE_RADIUS = 100;
 
-// Shared globe ref for external camera control
 let globeInstance: any = null;
 export function getGlobe() { return globeInstance; }
 
@@ -20,6 +19,7 @@ export function EarthGlobe() {
   const { activeCategories, minMagnitude, maxMagnitude, timelinePercent, selectedEvent } = useGlobeStore();
   const [size, setSize] = useState({ w: window.innerWidth, h: window.innerHeight });
   const prevEventIdRef = useRef<string | null>(null);
+  const ringsGroupRef = useRef<THREE.Group>(new THREE.Group());
 
   useEffect(() => {
     const onResize = () => setSize({ w: window.innerWidth, h: window.innerHeight });
@@ -27,21 +27,24 @@ export function EarthGlobe() {
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
-  // Init globe
   useEffect(() => {
     const globe = globeRef.current;
     if (!globe) return;
     globe.controls().autoRotate = true;
     globe.controls().autoRotateSpeed = 0.15;
     globeInstance = globe;
-    return () => { globeInstance = null; };
+    // Add rings group to scene
+    globe.scene().add(ringsGroupRef.current);
+    return () => {
+      globeInstance = null;
+      globe.scene().remove(ringsGroupRef.current);
+    };
   }, []);
 
-  // Fly to selected event — only when ID changes
+  // Fly to selected event
   useEffect(() => {
     const globe = globeRef.current;
     if (!globe) return;
-
     const newId = selectedEvent ? `${selectedEvent.event_id}-${selectedEvent.time}` : null;
     if (newId === prevEventIdRef.current) return;
     prevEventIdRef.current = newId;
@@ -62,27 +65,62 @@ export function EarthGlobe() {
     }
   }, [selectedEvent]);
 
-  // Time window
   const timeWindowHours = useMemo(() => {
     if (timelinePercent >= 99) return GLOBE_HOURS;
     return Math.max(0.5, (timelinePercent / 100) * 12);
   }, [timelinePercent]);
 
-  const cutoffTime = useMemo(() => {
-    return Date.now() - timeWindowHours * 60 * 60 * 1000;
-  }, [timeWindowHours]);
+  const cutoffTime = useMemo(() => Date.now() - timeWindowHours * 60 * 60 * 1000, [timeWindowHours]);
 
-  // Filter
   const filteredEvents = useMemo(() => {
     return events.filter(e => {
       if (!activeCategories.has(e.domain)) return false;
       if ((e.magnitude || 0) < minMagnitude) return false;
       if ((e.magnitude || 0) > maxMagnitude) return false;
-      const eventTime = new Date(e.time).getTime();
-      if (eventTime < cutoffTime) return false;
-      return true;
+      return new Date(e.time).getTime() >= cutoffTime;
     });
   }, [events, activeCategories, minMagnitude, maxMagnitude, cutoffTime]);
+
+  // Update impact rings on the globe surface
+  useEffect(() => {
+    const globe = globeRef.current;
+    if (!globe) return;
+    const group = ringsGroupRef.current;
+
+    // Clear old rings
+    while (group.children.length > 0) {
+      const child = group.children[0] as THREE.Mesh;
+      (child.geometry as THREE.BufferGeometry).dispose();
+      (child.material as THREE.Material).dispose();
+      group.remove(child);
+    }
+
+    // Create new rings
+    filteredEvents.forEach((e) => {
+      const mag = e.magnitude || 1;
+      const radiusKm = Math.pow(10, mag * 0.45) * 1.5;
+      const radiusUnits = Math.max(1, Math.min(radiusKm * (GLOBE_RADIUS / 40075) * 111, 20));
+
+      const ring = new THREE.Mesh(
+        new THREE.RingGeometry(radiusUnits * 0.7, radiusUnits, 48),
+        new THREE.MeshBasicMaterial({
+          color: new THREE.Color(DOMAIN_COLORS[e.domain] || '#6b7280'),
+          transparent: true,
+          opacity: 0.2,
+          side: THREE.DoubleSide,
+        })
+      );
+
+      // Position on globe surface using globe.getCoords
+      const coords = globe.getCoords(e.latitude, e.longitude, 0.001);
+      ring.position.copy(coords);
+
+      // Orient ring to face away from globe center (flat on surface)
+      ring.lookAt(0, 0, 0);
+
+      group.add(ring);
+    });
+  }, [filteredEvents]);
 
   // Pillar lines
   const points = filteredEvents.map((e) => ({
@@ -93,59 +131,15 @@ export function EarthGlobe() {
     color: DOMAIN_COLORS[e.domain] || '#6b7280',
   }));
 
-  // Spheres with impact rings
-  const sphereAlt = filteredEvents.map((e) => {
-    const mag = e.magnitude || 1;
-    // Convert km radius to Three.js units
-    // 1 degree ≈ 111km, globe circumference = 2π * 100 ≈ 628 units
-    // So 1km ≈ 628 / 40075 ≈ 0.0157 units
-    // Impact radius in km: ~10^(mag*0.5) roughly
-    const radiusKm = Math.pow(10, mag * 0.45) * 1.5;
-    const radiusUnits = radiusKm * 0.0157;
-
-    return {
-      lat: e.latitude,
-      lng: e.longitude,
-      alt: 0.01 + mag * 0.004,
-      size: Math.max(0.15, mag * 0.05),
-      color: DOMAIN_COLORS[e.domain] || '#6b7280',
-      event: e,
-      ringRadius: Math.max(0.5, Math.min(radiusUnits, 15)),
-      ringColor: DOMAIN_COLORS[e.domain] || '#6b7280',
-      label: `${e.domain.toUpperCase()} — M${e.magnitude?.toFixed(1) || '?'}\n${e.location}\nDepth: ${e.depth_km?.toFixed(1) || '?'}km`,
-    };
-  });
-
-  // Custom object: sphere + ring
-  const createObject = (d: any) => {
-    const group = new THREE.Group();
-
-    // Marker sphere
-    const sphere = new THREE.Mesh(
-      new THREE.SphereGeometry(d.size, 16, 16),
-      new THREE.MeshBasicMaterial({
-        color: new THREE.Color(d.color),
-        transparent: true,
-        opacity: 0.95,
-      })
-    );
-    group.add(sphere);
-
-    // Impact ring — on earth surface (push down from marker altitude)
-    const ring = new THREE.Mesh(
-      new THREE.RingGeometry(d.ringRadius * 0.7, d.ringRadius, 48),
-      new THREE.MeshBasicMaterial({
-        color: new THREE.Color(d.ringColor),
-        transparent: true,
-        opacity: 0.2,
-        side: THREE.DoubleSide,
-      })
-    );
-    ring.position.y = -d.alt; // Push ring down to surface level
-    group.add(ring);
-
-    return group;
-  };
+  // Marker spheres
+  const markers = filteredEvents.map((e) => ({
+    lat: e.latitude,
+    lng: e.longitude,
+    alt: 0.01 + (e.magnitude || 1) * 0.004,
+    size: Math.max(0.15, (e.magnitude || 1) * 0.05),
+    color: DOMAIN_COLORS[e.domain] || '#6b7280',
+    label: `${e.domain.toUpperCase()} — M${e.magnitude?.toFixed(1) || '?'}\n${e.location}\nDepth: ${e.depth_km?.toFixed(1) || '?'}km`,
+  }));
 
   return (
     <Globe
@@ -166,12 +160,15 @@ export function EarthGlobe() {
       pointRadius="size"
       pointResolution={6}
       pointsMerge={false}
-      objectsData={sphereAlt}
+      objectsData={markers}
       objectLat="lat"
       objectLng="lng"
       objectAltitude="alt"
       objectLabel="label"
-      objectThreeObject={createObject}
+      objectThreeObject={(d: any) => new THREE.Mesh(
+        new THREE.SphereGeometry(d.size, 16, 16),
+        new THREE.MeshBasicMaterial({ color: new THREE.Color(d.color), transparent: true, opacity: 0.95 })
+      )}
     />
   );
 }
