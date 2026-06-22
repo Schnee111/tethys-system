@@ -205,16 +205,25 @@ export function EarthGlobe() {
     color: DOMAIN_COLORS[e.domain] || '#6b7280',
   })), [filteredEvents]);
 
-  // Marker spheres — memoized
+  // Marker spheres — memoized, include domain for shape selection
   const markers = useMemo(() => filteredEvents.map((e) => {
     const isSelected = selectedEvent?.event_id === e.event_id && selectedEvent?.time === e.time;
+    const hasSelection = selectedEvent != null;
     const mag = e.magnitude || 1;
+
+    // Dim non-selected when something is selected
+    const opacity = hasSelection ? (isSelected ? 1.0 : 0.3) : 0.95;
+    const sizeMultiplier = isSelected ? 1.5 : 1;
+
     return {
       lat: e.latitude,
       lng: e.longitude,
       alt: 0.01 + mag * 0.004,
-      size: isSelected ? Math.max(0.3, mag * 0.08) : Math.max(0.15, mag * 0.05),
+      size: Math.max(0.15, mag * 0.05) * sizeMultiplier,
       color: isSelected ? '#ffffff' : (DOMAIN_COLORS[e.domain] || '#6b7280'),
+      domain: e.domain,
+      isSelected,
+      opacity,
       label: `${e.domain.toUpperCase()} — M${e.magnitude?.toFixed(1) || '?'}\n${e.location}\nDepth: ${e.depth_km?.toFixed(1) || '?'}km`,
     };
   }), [filteredEvents, selectedEvent]);
@@ -243,14 +252,28 @@ export function EarthGlobe() {
       objectLng="lng"
       objectAltitude="alt"
       objectLabel="label"
-      objectThreeObject={(d: any) => new THREE.Mesh(
-        new THREE.SphereGeometry(d.size, 16, 16),
-        new THREE.MeshBasicMaterial({
-          color: new THREE.Color(d.color),
+      objectThreeObject={(d: any) => {
+        const color = new THREE.Color(d.color);
+        const mat = new THREE.MeshBasicMaterial({
+          color,
           transparent: true,
-          opacity: 0.95,
-        })
-      )}
+          opacity: d.opacity ?? 0.95,
+        });
+
+        // Volcanic: cone (mountain shape)
+        if (d.domain === 'volcanic') {
+          return new THREE.Mesh(
+            new THREE.ConeGeometry(d.size, d.size * 2, 8),
+            mat,
+          );
+        }
+
+        // Default (seismic, etc.): sphere
+        return new THREE.Mesh(
+          new THREE.SphereGeometry(d.size, 16, 16),
+          mat,
+        );
+      }}
     />
   );
 }
