@@ -10,9 +10,7 @@ export function useGlassStyle() {
   const altitude = useGlobeStore(s => s.altitude);
 
   return useMemo(() => {
-    const isDark = altitude < 0.5;
-    const opacity = isDark ? 0.50 : 0.06;
-    console.log(`[GLASS] alt=${altitude.toFixed(2)} → ${isDark ? 'DARK' : 'LIGHT'} opacity=${opacity}`);
+    const opacity = altitude < 0.5 ? 0.50 : 0.06;
     return {
       background: `rgba(0,0,0,${opacity})`,
       backdropFilter: 'blur(20px)',
