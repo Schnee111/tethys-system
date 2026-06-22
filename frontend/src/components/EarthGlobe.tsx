@@ -126,13 +126,23 @@ export function EarthGlobe() {
   const cutoffTime = useMemo(() => Date.now() - timeWindowHours * 60 * 60 * 1000, [timeWindowHours]);
 
   const filteredEvents = useMemo(() => {
-    return events.filter(e => {
+    const base = events.filter(e => {
       if (!activeCategories.has(e.domain)) return false;
       if ((e.magnitude || 0) < minMagnitude) return false;
       if ((e.magnitude || 0) > maxMagnitude) return false;
       return new Date(e.time).getTime() >= cutoffTime;
     });
-  }, [events, activeCategories, minMagnitude, maxMagnitude, cutoffTime]);
+
+    // Always include selected event on globe (even if outside time range)
+    if (selectedEvent) {
+      const exists = base.some(e => e.event_id === selectedEvent.event_id);
+      if (!exists) {
+        base.unshift(selectedEvent);
+      }
+    }
+
+    return base;
+  }, [events, activeCategories, minMagnitude, maxMagnitude, cutoffTime, selectedEvent]);
 
   // Update pulse rings
   useEffect(() => {
