@@ -145,3 +145,28 @@ async def get_volcanic_events(
         "count": len(rows),
         "events": [dict(r) for r in rows],
     }
+
+
+@router.get("/api/v1/atmospheric")
+async def get_atmospheric(
+    hours: int = Query(default=6, ge=1, le=168),
+):
+    """Recent atmospheric readings (latest per location)."""
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            """
+            SELECT DISTINCT ON (location_name)
+                time, location_name, latitude, longitude,
+                category, temperature, temp_min, precipitation,
+                wind_speed, wind_dir
+            FROM atmospheric_data
+            WHERE time > NOW() - make_interval(hours => $1)
+            ORDER BY location_name, time DESC
+            """,
+            hours,
+        )
+    return {
+        "count": len(rows),
+        "readings": [dict(r) for r in rows],
+    }

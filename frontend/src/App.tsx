@@ -9,6 +9,9 @@ import { EarthGlobe } from './components/EarthGlobe';
 import { LiveFeed } from './components/LiveFeed';
 import { SolarWindCard } from './components/SolarWindCard';
 import { GoesCard } from './components/GoesCard';
+import { SpaceWeatherCard } from './components/SpaceWeatherCard';
+import { VolcanicCard } from './components/VolcanicCard';
+import { AtmosphericCard } from './components/AtmosphericCard';
 import { ActivityCard } from './components/ActivityCard';
 import { FilterBar } from './components/FilterBar';
 import { TimelineSlider } from './components/TimelineSlider';
@@ -90,6 +93,9 @@ export default function App() {
           <ActivityCard />
           <SolarWindCard />
           <GoesCard />
+          <SpaceWeatherCard />
+          <VolcanicCard />
+          <AtmosphericCard />
         </aside>
 
         {/* Right side — filter + live feed */}

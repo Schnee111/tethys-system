@@ -54,4 +54,5 @@ export const api = {
   getGoesXray: (params?: { hours?: number }) => client.get('/api/v1/goes/xray', { params }).then(r => r.data),
   getVolcanic: () => client.get('/api/v1/volcanic').then(r => r.data),
   getAtmospheric: () => client.get('/api/v1/atmospheric').then(r => r.data),
+  getSpaceWeather: () => client.get('/api/v1/space-weather').then(r => r.data),
 };
