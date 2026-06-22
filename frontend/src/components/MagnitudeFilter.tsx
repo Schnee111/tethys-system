@@ -13,9 +13,14 @@ export function MagnitudeFilter() {
 
   return (
     <div style={{
+      position: 'fixed',
+      bottom: 52,
+      left: 48,
+      zIndex: 50,
       display: 'flex',
       alignItems: 'center',
       gap: 8,
+      userSelect: 'none',
     }}>
       <span style={{
         fontFamily: 'var(--font-mono)',
