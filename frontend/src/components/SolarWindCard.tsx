@@ -60,7 +60,7 @@ export function SolarWindCard() {
 
   if (!data) return null;
 
-  const bzSouth = data.bz_gsm < 0;
+  const bzSouth = (data.bz_gsm ?? 0) < 0;
 
   return (
     <div style={{ padding: '14px', borderRadius: 16, ...glass, display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -86,14 +86,19 @@ export function SolarWindCard() {
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#71717a', textTransform: 'uppercase' }}>Bz</span>
           <span style={{
             fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700,
-            color: bzSouth ? '#ef4444' : '#4ade80',
+            color: data.bz_gsm == null ? '#3f3f46' : bzSouth ? '#ef4444' : '#4ade80',
           }}>
-            {data.bz_gsm > 0 ? '+' : ''}{data.bz_gsm.toFixed(1)} nT {bzSouth ? '↓ South' : '↑ North'}
+            {data.bz_gsm != null
+              ? `${data.bz_gsm > 0 ? '+' : ''}${data.bz_gsm.toFixed(1)} nT ${bzSouth ? '↓ South' : '↑ North'}`
+              : '—'
+            }
           </span>
         </div>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: bzSouth ? 'rgba(239,68,68,0.6)' : 'rgba(74,222,128,0.5)' }}>
-          {bzSouth ? '⚠ South = geomagnetic storm risk' : '✓ North = stable conditions'}
-        </span>
+        {data.bz_gsm != null && (
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: bzSouth ? 'rgba(239,68,68,0.6)' : 'rgba(74,222,128,0.5)' }}>
+            {bzSouth ? '⚠ South = geomagnetic storm risk' : '✓ North = stable conditions'}
+          </span>
+        )}
       </div>
     </div>
   );
