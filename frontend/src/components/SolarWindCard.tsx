@@ -24,7 +24,7 @@ function GaugeBar({ value, max, color, label, unit, threshold }: {
             {value.toFixed(1)} <span style={{ fontSize: 8, color: '#71717a' }}>{unit}</span>
           </span>
         ) : (
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#3f3f46' }}>NO DATA</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#3f3f46' }}>—</span>
         )}
       </div>
       <div style={{ position: 'relative', height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
