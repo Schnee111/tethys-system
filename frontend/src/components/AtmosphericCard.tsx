@@ -27,7 +27,7 @@ export function AtmosphericCard() {
   useEffect(() => {
     const fetch = async () => {
       try {
-        const res = await api.getAtmospheric();
+        const res = await api.getAtmospheric({ hours: 24 });
         if (res) setData(res);
       } catch {}
     };

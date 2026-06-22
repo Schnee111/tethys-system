@@ -53,6 +53,6 @@ export const api = {
   getSolarWindLatest: () => client.get('/api/v1/solar-wind/latest').then(r => r.data),
   getGoesXray: (params?: { hours?: number }) => client.get('/api/v1/goes/xray', { params }).then(r => r.data),
   getVolcanic: () => client.get('/api/v1/volcanic').then(r => r.data),
-  getAtmospheric: () => client.get('/api/v1/atmospheric').then(r => r.data),
+  getAtmospheric: (params?: { hours?: number }) => client.get('/api/v1/atmospheric', { params }).then(r => r.data),
   getSpaceWeather: () => client.get('/api/v1/space-weather').then(r => r.data),
 };
