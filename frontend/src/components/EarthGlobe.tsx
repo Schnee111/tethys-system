@@ -6,7 +6,7 @@ import { useGlobeStore } from '../stores/globeStore';
 import { DOMAIN_COLORS } from '../utils/colors';
 
 const GLOBE_HOURS = 2;
-const FLY_ALTITUDE = 1.0;
+const FLY_ALTITUDE = 0.8; // Closer when focused (was 1.0)
 const FLY_DURATION = 1200;
 const GLOBE_RADIUS = 100;
 const PULSE_COUNT = 3;
@@ -46,6 +46,8 @@ export function EarthGlobe() {
     if (!globe) return;
     globe.controls().autoRotate = true;
     globe.controls().autoRotateSpeed = 0.15;
+    // Initial view — not too far
+    globe.pointOfView({ altitude: 2.0 }, 0);
     globeInstance = globe;
     globe.scene().add(ringsGroupRef.current);
 
