@@ -263,15 +263,15 @@ export function EarthGlobe() {
       showAtmosphere={true}
       atmosphereColor="#38bdf8"
       atmosphereAltitude={0.2}
-      // Heatmap — atmospheric temperature
+      // Heatmap — atmospheric temperature (subtle)
       heatmapsData={[heatmapPoints]}
       heatmapPointLat="lat"
       heatmapPointLng="lng"
       heatmapPointWeight="weight"
-      heatmapBandwidth={3}
-      heatmapColorSaturation={2}
-      heatmapBaseAltitude={0.005}
-      heatmapTopAltitude={0.05}
+      heatmapBandwidth={5}
+      heatmapColorSaturation={0.8}
+      heatmapBaseAltitude={0.002}
+      heatmapTopAltitude={0.015}
       pointsData={points}
       pointLat="lat"
       pointLng="lng"
