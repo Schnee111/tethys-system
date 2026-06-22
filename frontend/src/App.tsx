@@ -88,7 +88,7 @@ export default function App() {
           </div>
         </div>
 
-        {/* Left panel */}
+        {/* Left panel — scrollable */}
         <aside style={{ position: 'absolute', left: 48, top: 112, bottom: 112, width: 320, display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto', pointerEvents: 'auto' }}>
           <ActivityCard />
           <SolarWindCard />
