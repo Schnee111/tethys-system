@@ -227,7 +227,10 @@ export function EarthGlobe() {
       domain: e.domain,
       isSelected,
       opacity,
-      label: `${e.domain.toUpperCase()} — M${e.magnitude?.toFixed(1) || '?'}\n${e.location}\nDepth: ${e.depth_km?.toFixed(1) || '?'}km`,
+      // Domain-aware label
+      label: e.domain === 'volcanic'
+        ? `VOLCANIC\n${e.location}\n${e.description || ''}`
+        : `${e.domain.toUpperCase()} — M${e.magnitude?.toFixed(1) || '?'}\n${e.location}\nDepth: ${e.depth_km?.toFixed(1) || '?'}km`,
     };
   }), [filteredEvents, selectedEvent]);
 
