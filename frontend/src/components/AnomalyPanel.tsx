@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useDataStore } from '../stores/dataStore';
+import { useGlobeStore } from '../stores/globeStore';
 import type { Anomaly } from '../types';
 import { severityColor } from '../utils/colors';
 
@@ -45,6 +46,13 @@ function AnomalyItem({ a }: { a: Anomaly }) {
 
 export function AnomalyPanel() {
   const { anomalies, isLoading } = useDataStore();
+  const { activeCategories, minMagnitude } = useGlobeStore();
+
+  const filtered = anomalies.filter(a => {
+    if (!activeCategories.has(a.domain)) return false;
+    if ((a.z_score || 0) < minMagnitude) return false;
+    return true;
+  });
 
   return (
     <div style={{
@@ -62,7 +70,7 @@ export function AnomalyPanel() {
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
         <span style={{ fontSize: 9, letterSpacing: '0.1em', color: 'rgba(161,161,170,0.8)', textTransform: 'uppercase', fontWeight: 600 }}>
-          ANOMALIES ({anomalies.length})
+          ANOMALIES ({filtered.length})
         </span>
         <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(251,191,36,0.8)', animation: 'pulse 2s infinite' }} />
       </div>
@@ -74,16 +82,16 @@ export function AnomalyPanel() {
       <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
         {isLoading ? (
           <div style={{ fontSize: 10, color: '#71717a', fontFamily: 'var(--font-mono)' }}>Loading...</div>
-        ) : anomalies.length === 0 ? (
+        ) : filtered.length === 0 ? (
           <div style={{ fontSize: 10, color: '#71717a', fontFamily: 'var(--font-mono)' }}>No anomalies detected</div>
         ) : (
           <>
-            {anomalies.slice(0, 15).map((a) => (
+            {filtered.slice(0, 15).map((a) => (
               <AnomalyItem key={a.anomaly_id} a={a} />
             ))}
-            {anomalies.length > 15 && (
+            {filtered.length > 15 && (
               <div style={{ fontSize: 9, color: 'rgba(161,161,170,0.5)', fontFamily: 'var(--font-mono)', textAlign: 'center', padding: '6px 0' }}>
-                +{anomalies.length - 15} more
+                +{filtered.length - 15} more
               </div>
             )}
           </>

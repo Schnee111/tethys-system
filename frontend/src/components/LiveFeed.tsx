@@ -11,8 +11,13 @@ function formatTime(time: string): string {
 
 export function LiveFeed() {
   const { events, isLoading } = useDataStore();
-  const { activeCategories } = useGlobeStore();
-  const filteredEvents = events.filter(e => activeCategories.has(e.domain));
+  const { activeCategories, minMagnitude, maxMagnitude } = useGlobeStore();
+  const filteredEvents = events.filter(e => {
+    if (!activeCategories.has(e.domain)) return false;
+    const mag = e.magnitude || 0;
+    if (mag < minMagnitude || mag > maxMagnitude) return false;
+    return true;
+  });
   const { selectedEvent, setSelectedEvent } = useGlobeStore();
 
   return (
