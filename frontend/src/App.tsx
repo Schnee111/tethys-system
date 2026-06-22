@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { Wifi, WifiOff, Bell, Settings, User } from 'lucide-react';
 import { useDataStore } from './stores/dataStore';
-import { useGlobeStore } from './stores/globeStore';
 import { useWebSocket } from './hooks/useWebSocket';
 import { api } from './api/client';
 import { EarthGlobe } from './components/EarthGlobe';
@@ -9,9 +8,8 @@ import { LiveFeed } from './components/LiveFeed';
 import { AnomalyPanel } from './components/AnomalyPanel';
 import { ActivityCard } from './components/ActivityCard';
 import { SensorsGrid } from './components/SensorsGrid';
-import { CategoryFilter } from './components/CategoryFilter';
+import { FilterBar } from './components/FilterBar';
 import { TimelineSlider } from './components/TimelineSlider';
-import { MagnitudeFilter } from './components/MagnitudeFilter';
 
 // Shared glassmorphism style
 const GLASS = {
@@ -22,7 +20,6 @@ const GLASS = {
 
 export default function App() {
   const { setStatus, setAnomalies, setActivity, setLoading } = useDataStore();
-  const { activeCategories, toggleCategory } = useGlobeStore();
 
   // WebSocket for real-time events
   const { isConnected } = useWebSocket();
@@ -99,15 +96,14 @@ export default function App() {
           <SensorsGrid />
         </aside>
 
-        {/* Right panel */}
-        <aside style={{ position: 'absolute', right: 48, top: 112, bottom: 112, width: 320, display: 'flex', flexDirection: 'column', gap: 16, padding: 20, borderRadius: 16, ...GLASS, pointerEvents: 'auto' }}>
-          <CategoryFilter activeCategories={activeCategories} onToggle={toggleCategory} />
+        {/* Right panel — filters + live feed */}
+        <aside style={{ position: 'absolute', right: 48, top: 112, bottom: 112, width: 320, display: 'flex', flexDirection: 'column', gap: 12, padding: 16, borderRadius: 16, ...GLASS, pointerEvents: 'auto' }}>
+          <FilterBar />
           <LiveFeed />
         </aside>
 
-        {/* Controls — components position themselves with fixed */}
+        {/* Timeline — component positions itself */}
         <TimelineSlider />
-        <MagnitudeFilter />
       </div>
     </>
   );
