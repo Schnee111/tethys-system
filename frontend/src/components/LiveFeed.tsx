@@ -110,7 +110,7 @@ export function LiveFeed() {
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.25 }}
-            style={{ overflow: 'hidden', textAlign: 'left', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+            style={{ overflow: 'hidden', textAlign: 'left', padding: '14px 0 10px 0', borderBottom: '1px solid rgba(255,255,255,0.06)', marginBottom: 8 }}
           >
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
