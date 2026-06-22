@@ -220,7 +220,7 @@ export function EarthGlobe() {
       lng: e.longitude,
       alt: 0.01 + mag * 0.004,
       size: Math.max(0.15, mag * 0.05) * sizeMultiplier,
-      color: isSelected ? '#ffffff' : (DOMAIN_COLORS[e.domain] || '#6b7280'),
+      color: DOMAIN_COLORS[e.domain] || '#6b7280',
       domain: e.domain,
       isSelected,
       opacity,
@@ -260,19 +260,32 @@ export function EarthGlobe() {
           opacity: d.opacity ?? 0.95,
         });
 
-        // Volcanic: ring (flat on surface, distinct from sphere)
+        const group = new THREE.Group();
+
+        // Main shape
+        let mesh: THREE.Mesh;
         if (d.domain === 'volcanic') {
-          return new THREE.Mesh(
-            new THREE.TorusGeometry(d.size, d.size * 0.3, 8, 16),
-            mat,
+          mesh = new THREE.Mesh(new THREE.TorusGeometry(d.size, d.size * 0.3, 8, 16), mat);
+        } else {
+          mesh = new THREE.Mesh(new THREE.SphereGeometry(d.size, 16, 16), mat);
+        }
+        group.add(mesh);
+
+        // Selected: white outline ring
+        if (d.isSelected) {
+          const ring = new THREE.Mesh(
+            new THREE.RingGeometry(d.size * 1.8, d.size * 2.2, 32),
+            new THREE.MeshBasicMaterial({
+              color: new THREE.Color('#ffffff'),
+              transparent: true,
+              opacity: 0.5,
+              side: THREE.DoubleSide,
+            }),
           );
+          group.add(ring);
         }
 
-        // Default (seismic, etc.): sphere
-        return new THREE.Mesh(
-          new THREE.SphereGeometry(d.size, 16, 16),
-          mat,
-        );
+        return group;
       }}
     />
   );
