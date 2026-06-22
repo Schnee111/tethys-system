@@ -227,52 +227,6 @@ export function LiveFeed() {
           })
         )}
       </div>
-
-      {/* Telemetry */}
-      <TelemetryBar />
     </>
-  );
-}
-
-function TelemetryBar() {
-  const [atmosphere, setAtmosphere] = useState<string>('—');
-  const [solarFlux, setSolarFlux] = useState<string>('—');
-
-  useEffect(() => {
-    // Atmospheric: average temperature from latest readings
-    api.getAtmospheric({ hours: 24 }).then((res) => {
-      if (res?.readings?.length > 0) {
-        const avg = res.readings.reduce((s: number, r: any) => s + (r.temperature ?? 0), 0) / res.readings.length;
-        setAtmosphere(`${avg.toFixed(0)}°C avg · ${res.count} stations`);
-      }
-    }).catch(() => {});
-
-    // Solar flux: latest GOES X-ray
-    api.getGoesXray({ hours: 6 }).then((res) => {
-      if (res?.readings?.length > 0) {
-        const xray = res.readings.find((r: any) => r.energy_band === '0.1-0.8nm') || res.readings[0];
-        const flux = xray.flux;
-        // NOAA classification
-        let cls = 'A';
-        if (flux >= 1e-4) cls = 'X';
-        else if (flux >= 1e-5) cls = 'M';
-        else if (flux >= 1e-6) cls = 'C';
-        else if (flux >= 1e-7) cls = 'B';
-        setSolarFlux(`${cls} ${flux.toExponential(1)} W/m²`);
-      }
-    }).catch(() => {});
-  }, []);
-
-  return (
-    <div style={{ paddingTop: 12, fontFamily: 'var(--font-mono)', fontSize: 9, color: '#71717a', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-        <span>ATMOSPHERE</span>
-        <span style={{ color: '#a1a1aa' }}>{atmosphere}</span>
-      </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-        <span>SOLAR FLUX</span>
-        <span style={{ color: '#a1a1aa' }}>{solarFlux}</span>
-      </div>
-    </div>
   );
 }
