@@ -90,7 +90,7 @@ export default function App() {
         </div>
 
         {/* Left panel — grouped, collapsible */}
-        <aside style={{ position: 'absolute', left: 48, top: 112, bottom: 112, width: 320, display: 'flex', flexDirection: 'column', gap: 8, overflowY: 'auto', pointerEvents: 'auto' }}>
+        <aside style={{ position: 'absolute', left: 48, top: 112, bottom: 80, width: 320, display: 'flex', flexDirection: 'column', gap: 8, overflowY: 'auto', pointerEvents: 'auto' }}>
           {/* Always visible */}
           <ActivityCard />
 
@@ -107,7 +107,7 @@ export default function App() {
         </aside>
 
         {/* Right side — atmosphere + filter + live feed */}
-        <div style={{ position: 'absolute', right: 48, top: 112, bottom: 112, width: 320, display: 'flex', flexDirection: 'column', gap: 12, pointerEvents: 'auto' }}>
+        <div style={{ position: 'absolute', right: 48, top: 112, bottom: 80, width: 320, display: 'flex', flexDirection: 'column', gap: 12, pointerEvents: 'auto' }}>
           <AtmosphericCard />
           <div style={{ padding: '12px 14px', borderRadius: 12, ...GLASS }}>
             <FilterBar />
