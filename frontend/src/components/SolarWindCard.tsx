@@ -11,21 +11,26 @@ interface SolarWindData {
 }
 
 function GaugeBar({ value, max, color, label, unit, threshold }: {
-  value: number; max: number; color: string; label: string; unit: string;
-  threshold?: number; // Normal range marker position (0-100%)
+  value: number | null; max: number; color: string; label: string; unit: string;
+  threshold?: number;
 }) {
-  const pct = Math.min(100, (value / max) * 100);
+  const pct = value != null ? Math.min(100, (value / max) * 100) : 0;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</span>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#e4e4e7', fontWeight: 700 }}>
-          {value.toFixed(1)} <span style={{ fontSize: 8, color: '#71717a' }}>{unit}</span>
-        </span>
+        {value != null ? (
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#e4e4e7', fontWeight: 700 }}>
+            {value.toFixed(1)} <span style={{ fontSize: 8, color: '#71717a' }}>{unit}</span>
+          </span>
+        ) : (
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#3f3f46' }}>NO DATA</span>
+        )}
       </div>
       <div style={{ position: 'relative', height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
-        <div style={{ width: `${pct}%`, height: '100%', borderRadius: 2, background: color, transition: 'width 0.5s ease' }} />
-        {/* Normal range marker */}
+        {value != null && (
+          <div style={{ width: `${pct}%`, height: '100%', borderRadius: 2, background: color, transition: 'width 0.5s ease' }} />
+        )}
         {threshold != null && (
           <div style={{
             position: 'absolute', left: `${threshold}%`, top: -1, bottom: -1,
