@@ -9,9 +9,21 @@ const GLOBE_HOURS = 2;
 const FLY_ALTITUDE = 1.0;
 const FLY_DURATION = 1200;
 const GLOBE_RADIUS = 100;
+const PULSE_COUNT = 3; // Number of concurrent pulse rings per event
+const PULSE_SPEED = 0.008; // Expansion speed per frame
+const PULSE_MAX_SCALE = 3.0; // Max size before reset
 
 let globeInstance: any = null;
 export function getGlobe() { return globeInstance; }
+
+// Pulse ring data for animation
+interface PulseRing {
+  mesh: THREE.Mesh;
+  baseRadius: number;
+  scale: number;
+  speed: number;
+  phase: number; // offset for staggered pulses
+}
 
 export function EarthGlobe() {
   const globeRef = useRef<any>(null);
@@ -20,6 +32,8 @@ export function EarthGlobe() {
   const [size, setSize] = useState({ w: window.innerWidth, h: window.innerHeight });
   const prevEventIdRef = useRef<string | null>(null);
   const ringsGroupRef = useRef<THREE.Group>(new THREE.Group());
+  const pulseRingsRef = useRef<PulseRing[]>([]);
+  const animFrameRef = useRef<number>(0);
 
   useEffect(() => {
     const onResize = () => setSize({ w: window.innerWidth, h: window.innerHeight });
@@ -33,9 +47,29 @@ export function EarthGlobe() {
     globe.controls().autoRotate = true;
     globe.controls().autoRotateSpeed = 0.15;
     globeInstance = globe;
-    // Add rings group to scene
     globe.scene().add(ringsGroupRef.current);
+
+    // Animation loop for pulse rings
+    const animate = () => {
+      pulseRingsRef.current.forEach(pulse => {
+        pulse.scale += pulse.speed;
+        const t = pulse.phase; // 0-1, staggered
+        const progress = (pulse.scale + t) % 1; // 0→1 cycle
+
+        // Expand ring
+        const s = 1 + progress * (PULSE_MAX_SCALE - 1);
+        pulse.mesh.scale.set(s, s, s);
+
+        // Fade out as it expands
+        const mat = pulse.mesh.material as THREE.MeshBasicMaterial;
+        mat.opacity = 0.25 * (1 - progress);
+      });
+      animFrameRef.current = requestAnimationFrame(animate);
+    };
+    animFrameRef.current = requestAnimationFrame(animate);
+
     return () => {
+      cancelAnimationFrame(animFrameRef.current);
       globeInstance = null;
       globe.scene().remove(ringsGroupRef.current);
     };
@@ -81,44 +115,50 @@ export function EarthGlobe() {
     });
   }, [events, activeCategories, minMagnitude, maxMagnitude, cutoffTime]);
 
-  // Update impact rings on the globe surface
+  // Update pulse rings
   useEffect(() => {
     const globe = globeRef.current;
     if (!globe) return;
     const group = ringsGroupRef.current;
 
-    // Clear old rings
-    while (group.children.length > 0) {
-      const child = group.children[0] as THREE.Mesh;
-      (child.geometry as THREE.BufferGeometry).dispose();
-      (child.material as THREE.Material).dispose();
-      group.remove(child);
-    }
+    // Clear old
+    pulseRingsRef.current.forEach(p => {
+      (p.mesh.geometry as THREE.BufferGeometry).dispose();
+      (p.mesh.material as THREE.Material).dispose();
+      group.remove(p.mesh);
+    });
+    pulseRingsRef.current = [];
 
-    // Create new rings
+    // Create new pulse rings for each event
     filteredEvents.forEach((e) => {
       const mag = e.magnitude || 1;
       const radiusKm = Math.pow(10, mag * 0.45) * 1.5;
-      const radiusUnits = Math.max(1, Math.min(radiusKm * (GLOBE_RADIUS / 40075) * 111, 20));
-
-      const ring = new THREE.Mesh(
-        new THREE.RingGeometry(radiusUnits * 0.7, radiusUnits, 48),
-        new THREE.MeshBasicMaterial({
-          color: new THREE.Color(DOMAIN_COLORS[e.domain] || '#6b7280'),
-          transparent: true,
-          opacity: 0.2,
-          side: THREE.DoubleSide,
-        })
-      );
-
-      // Position on globe surface using globe.getCoords
+      const radiusUnits = Math.max(0.8, Math.min(radiusKm * (GLOBE_RADIUS / 40075) * 111, 15));
+      const color = new THREE.Color(DOMAIN_COLORS[e.domain] || '#6b7280');
       const coords = globe.getCoords(e.latitude, e.longitude, 0.001);
-      ring.position.copy(coords);
 
-      // Orient ring to face away from globe center (flat on surface)
-      ring.lookAt(0, 0, 0);
+      // Multiple staggered pulses per event
+      for (let i = 0; i < PULSE_COUNT; i++) {
+        const geo = new THREE.RingGeometry(radiusUnits * 0.85, radiusUnits, 48);
+        const mat = new THREE.MeshBasicMaterial({
+          color: color.clone(),
+          transparent: true,
+          opacity: 0,
+          side: THREE.DoubleSide,
+        });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.copy(coords);
+        mesh.lookAt(0, 0, 0);
 
-      group.add(ring);
+        group.add(mesh);
+        pulseRingsRef.current.push({
+          mesh,
+          baseRadius: radiusUnits,
+          scale: 0,
+          speed: PULSE_SPEED,
+          phase: i / PULSE_COUNT, // Stagger: 0, 0.33, 0.67
+        });
+      }
     });
   }, [filteredEvents]);
 
