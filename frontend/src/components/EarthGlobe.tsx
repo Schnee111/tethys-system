@@ -132,8 +132,9 @@ export function EarthGlobe() {
     // Create new pulse rings for each event
     filteredEvents.forEach((e) => {
       const mag = e.magnitude || 1;
-      const radiusKm = Math.pow(10, mag * 0.4) * 2; // M1≈5km, M3≈30km, M5≈200km
-      const radiusUnits = Math.max(0.5, Math.min(radiusKm * (GLOBE_RADIUS / 40075) * 111, 8));
+      // Fixed visual size per magnitude — small, proportional, not exaggerated
+      const baseRadius = 0.3 + mag * 0.15; // M1=0.45, M3=0.75, M5=1.05
+      const radiusUnits = Math.min(baseRadius, 2.0);
       const color = new THREE.Color(DOMAIN_COLORS[e.domain] || '#6b7280');
       const coords = globe.getCoords(e.latitude, e.longitude, 0.001);
 
