@@ -3,6 +3,7 @@ import { useGlobeStore } from '../stores/globeStore';
 import { motion, AnimatePresence } from 'motion/react';
 import { X } from 'lucide-react';
 import { magnitudeColor, DOMAIN_COLORS } from '../utils/colors';
+import { getGlobe } from './EarthGlobe';
 
 function formatTime(time: string): string {
   try { return new Date(time).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }); }
@@ -98,7 +99,15 @@ export function LiveFeed() {
                   textAlign: 'left',
                   marginBottom: 4,
                 }}
-                onClick={() => setSelectedEvent(event)}
+                onClick={() => {
+                  setSelectedEvent(event);
+                  // Fly globe to event location
+                  const globe = getGlobe();
+                  if (globe) {
+                    globe.controls().autoRotate = false;
+                    globe.pointOfView({ lat: event.latitude, lng: event.longitude, altitude: 1.5 }, 1000);
+                  }
+                }}
                 onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
                 onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.background = 'transparent'; }}
               >

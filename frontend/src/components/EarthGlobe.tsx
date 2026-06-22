@@ -8,10 +8,14 @@ import { DOMAIN_COLORS } from '../utils/colors';
 // How many hours back the globe shows by default
 const GLOBE_HOURS = 2;
 
+// Shared globe ref for external control (camera, rotation)
+let globeInstance: any = null;
+export function getGlobe() { return globeInstance; }
+
 export function EarthGlobe() {
   const globeRef = useRef<any>(null);
   const { events } = useDataStore();
-  const { activeCategories, minMagnitude, maxMagnitude, timelinePercent } = useGlobeStore();
+  const { activeCategories, minMagnitude, maxMagnitude, timelinePercent, selectedEvent } = useGlobeStore();
   const [size, setSize] = useState({ w: window.innerWidth, h: window.innerHeight });
 
   useEffect(() => {
@@ -20,17 +24,40 @@ export function EarthGlobe() {
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
+  // Init globe — auto-rotate + expose instance
   useEffect(() => {
     const globe = globeRef.current;
     if (!globe) return;
     globe.controls().autoRotate = true;
     globe.controls().autoRotateSpeed = 0.2;
+    globeInstance = globe;
+    return () => { globeInstance = null; };
   }, []);
+
+  // When an event is selected → fly to it + pause rotation
+  useEffect(() => {
+    const globe = globeRef.current;
+    if (!globe) return;
+
+    if (selectedEvent) {
+      // Pause auto-rotation
+      globe.controls().autoRotate = false;
+      // Fly to event location
+      globe.pointOfView(
+        { lat: selectedEvent.latitude, lng: selectedEvent.longitude, altitude: 1.5 },
+        1000
+      );
+    } else {
+      // Resume auto-rotation when nothing selected
+      globe.controls().autoRotate = true;
+      globe.controls().autoRotateSpeed = 0.2;
+    }
+  }, [selectedEvent]);
 
   // Calculate time window based on timeline slider
   const timeWindowHours = useMemo(() => {
-    if (timelinePercent >= 99) return GLOBE_HOURS; // LIVE = last 2h
-    return Math.max(0.5, (timelinePercent / 100) * 12); // 0-12h range
+    if (timelinePercent >= 99) return GLOBE_HOURS;
+    return Math.max(0.5, (timelinePercent / 100) * 12);
   }, [timelinePercent]);
 
   const cutoffTime = useMemo(() => {
@@ -58,7 +85,7 @@ export function EarthGlobe() {
     color: DOMAIN_COLORS[e.domain] || '#6b7280',
   }));
 
-  // Spheres on top — color by DOMAIN, size by magnitude
+  // Spheres — color by DOMAIN, size by magnitude
   const sphereAlt = filteredEvents.map((e) => ({
     lat: e.latitude,
     lng: e.longitude,
