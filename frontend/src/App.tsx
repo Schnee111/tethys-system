@@ -94,14 +94,18 @@ export default function App() {
           {/* Always visible */}
           <ActivityCard />
 
-          {/* Space Weather group */}
-          <CollapsibleSection title="Space Weather" defaultOpen={true} summary="Solar · GOES · DONKI">
+          {/* Solar Monitoring */}
+          <CollapsibleSection title="Solar Monitoring" defaultOpen={true} summary="Solar Wind · GOES">
             <SolarWindCard />
             <GoesCard />
+          </CollapsibleSection>
+
+          {/* Space Alerts */}
+          <CollapsibleSection title="Space Alerts" defaultOpen={true} summary="DONKI · CME · Flares">
             <SpaceWeatherCard />
           </CollapsibleSection>
 
-          {/* Earth Activity group */}
+          {/* Earth Activity */}
           <CollapsibleSection title="Earth Activity" defaultOpen={false} summary="Volcanic · Atmospheric">
             <VolcanicCard />
             <AtmosphericCard />
