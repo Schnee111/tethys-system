@@ -61,7 +61,6 @@ export function AnomalyPanel() {
       padding: '14px',
       borderRadius: '16px',
       ...glass,
-      backdropFilter: 'blur(16px)',
       textAlign: 'left',
       flex: '1 1 0',
       minHeight: 0,

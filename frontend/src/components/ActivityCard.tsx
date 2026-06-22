@@ -32,7 +32,6 @@ export function ActivityCard() {
       padding: '12px 14px',
       borderRadius: 12,
       ...glass,
-      backdropFilter: 'blur(16px)',
       display: 'flex',
       justifyContent: 'space-between',
       alignItems: 'center',

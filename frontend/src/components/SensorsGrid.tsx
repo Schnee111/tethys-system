@@ -21,7 +21,6 @@ export function SensorsGrid() {
       padding: '8px 10px',
       borderRadius: '10px',
       ...glass,
-      backdropFilter: 'blur(16px)',
       textAlign: 'left',
       fontSize: 9,
       color: '#71717a',
