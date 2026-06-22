@@ -229,7 +229,7 @@ export function EarthGlobe() {
       opacity,
       // Domain-aware label
       label: e.domain === 'volcanic'
-        ? `VOLCANIC\n${e.location}\n${e.description || ''}`
+        ? `VOLCANIC\n${e.location}`
         : `${e.domain.toUpperCase()} — M${e.magnitude?.toFixed(1) || '?'}\n${e.location}\nDepth: ${e.depth_km?.toFixed(1) || '?'}km`,
     };
   }), [filteredEvents, selectedEvent]);

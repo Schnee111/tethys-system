@@ -179,13 +179,6 @@ export function LiveFeed() {
                   </div>
                 )}
                 {/* Volcanic-specific */}
-                {selectedEvent.description && (
-                  <div style={{ gridColumn: '1 / -1' }}>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#a1a1aa', lineHeight: 1.5 }}>
-                      {selectedEvent.description}
-                    </span>
-                  </div>
-                )}
                 {selectedEvent.elevation_m != null && (
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span style={{ color: '#52525b' }}>Elevation</span>
