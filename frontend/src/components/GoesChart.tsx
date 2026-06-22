@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { LineChart, Line, XAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { useGlassStyle } from '../utils/glass';
 import { api } from '../api/client';
 
-// NOAA X-ray class thresholds (W/m²)
 const CLASSES = [
   { label: 'A', flux: 1e-8, color: '#4ade80' },
   { label: 'B', flux: 1e-7, color: '#eab308' },
@@ -25,7 +24,7 @@ export function GoesChart() {
             time: new Date(r.time).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
             flux: r.flux,
           }))
-          .reverse(); // API returns DESC, chart needs ASC (oldest → newest)
+          .reverse();
 
         if (filtered.length > 50) {
           const step = Math.ceil(filtered.length / 50);
@@ -40,8 +39,14 @@ export function GoesChart() {
   const currentFlux = rawData.length > 0 ? rawData[rawData.length - 1].flux : 0;
   const currentClass = CLASSES.reduce((acc, c) => currentFlux >= c.flux ? c : acc, CLASSES[0]);
 
+  // Log transform for display (log10 of flux)
+  const chartData = rawData.map(d => ({
+    ...d,
+    logFlux: Math.log10(d.flux),
+  }));
+
   return (
-    <div style={{ padding: '14px', borderRadius: 16, ...glass, display: 'flex', flexDirection: 'column', gap: 6 }}>
+    <div style={{ padding: '14px', borderRadius: 16, ...glass, display: 'flex', flexDirection: 'column', gap: 4 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span style={{ fontSize: 9, letterSpacing: '0.1em', color: 'rgba(161,161,170,0.8)', textTransform: 'uppercase', fontWeight: 600 }}>
           GOES X-ray
@@ -53,17 +58,20 @@ export function GoesChart() {
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#52525b' }}>24h</span>
         </div>
       </div>
-      <div style={{ height: 64 }}>
+      <div style={{ height: 56 }}>
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={rawData} margin={{ top: 2, right: 4, bottom: 0, left: 0 }}>
-            <XAxis
-              dataKey="time"
-              tick={{ fontSize: 7, fill: '#3f3f46' }}
-              axisLine={false}
-              tickLine={false}
-              interval={Math.max(0, Math.floor(rawData.length / 4))}
-            />
-            <YAxis hide scale="log" domain={[1e-8, 1e-4]} />
+          <LineChart data={chartData} margin={{ top: 2, right: 2, bottom: 0, left: 2 }}>
+            <XAxis dataKey="time" hide />
+            {/* Log-scale reference lines for each class */}
+            {CLASSES.map((c) => (
+              <ReferenceLine
+                key={c.label}
+                y={Math.log10(c.flux)}
+                stroke={c.color}
+                strokeDasharray="3 3"
+                strokeOpacity={0.12}
+              />
+            ))}
             <Tooltip
               contentStyle={{
                 background: 'rgba(0,0,0,0.85)',
@@ -74,26 +82,15 @@ export function GoesChart() {
                 color: '#e4e4e7',
               }}
               labelStyle={{ color: '#71717a' }}
-              formatter={(value: any) => {
-                if (value == null) return ['—', 'Flux'];
-                const flux = Number(value);
+              formatter={(value: any, name: any, props: any) => {
+                const flux = props.payload.flux;
                 const cls = CLASSES.reduce((acc, c) => flux >= c.flux ? c : acc, CLASSES[0]);
                 return [`${cls.label} ${flux.toExponential(1)} W/m²`, 'X-ray'];
               }}
             />
-            {/* Class threshold lines */}
-            {CLASSES.slice(1).map((c) => (
-              <ReferenceLine
-                key={c.label}
-                y={c.flux}
-                stroke={c.color}
-                strokeDasharray="3 3"
-                strokeOpacity={0.15}
-              />
-            ))}
             <Line
               type="monotone"
-              dataKey="flux"
+              dataKey="logFlux"
               stroke="#f59e0b"
               strokeWidth={1.5}
               dot={false}
@@ -101,8 +98,8 @@ export function GoesChart() {
           </LineChart>
         </ResponsiveContainer>
       </div>
-      {/* Class labels */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: 7 }}>
+      {/* Class labels — fixed positions */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: 7, padding: '0 2px' }}>
         {CLASSES.map((c) => (
           <span key={c.label} style={{ color: currentFlux >= c.flux ? c.color : '#3f3f46', fontWeight: currentFlux >= c.flux ? 700 : 400 }}>
             {c.label}
