@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useDataStore } from '../stores/dataStore';
 import { useGlobeStore } from '../stores/globeStore';
+import { useGlassStyle } from '../utils/glass';
 import type { Anomaly } from '../types';
 import { severityColor } from '../utils/colors';
 
@@ -47,6 +48,7 @@ function AnomalyItem({ a }: { a: Anomaly }) {
 export function AnomalyPanel() {
   const { anomalies, isLoading } = useDataStore();
   const { activeCategories, minMagnitude } = useGlobeStore();
+  const glass = useGlassStyle();
 
   const filtered = anomalies.filter(a => {
     if (!activeCategories.has(a.domain)) return false;
@@ -58,7 +60,7 @@ export function AnomalyPanel() {
     <div style={{
       padding: '14px',
       borderRadius: '16px',
-      background: 'rgba(0,0,0,0.45)',
+      ...glass,
       backdropFilter: 'blur(16px)',
       textAlign: 'left',
       flex: '1 1 0',

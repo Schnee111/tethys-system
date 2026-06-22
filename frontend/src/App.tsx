@@ -1,6 +1,7 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Wifi, WifiOff, Bell, Settings, User } from 'lucide-react';
 import { useDataStore } from './stores/dataStore';
+import { useGlobeStore } from './stores/globeStore';
 import { useWebSocket } from './hooks/useWebSocket';
 import { api } from './api/client';
 import { EarthGlobe } from './components/EarthGlobe';
@@ -11,15 +12,22 @@ import { SensorsGrid } from './components/SensorsGrid';
 import { FilterBar } from './components/FilterBar';
 import { TimelineSlider } from './components/TimelineSlider';
 
-// Shared glassmorphism style
-const GLASS = {
-  background: 'rgba(0,0,0,0.45)',
-  backdropFilter: 'blur(20px)',
-  WebkitBackdropFilter: 'blur(20px)',
-} as const;
-
 export default function App() {
   const { setStatus, setAnomalies, setActivity, setLoading } = useDataStore();
+  const { altitude } = useGlobeStore();
+
+  // Dynamic glass opacity based on zoom:
+  // Zoomed out (alt=3+, space/dark bg) → lighter panels (0.06)
+  // Zoomed in  (alt=0.3, terrain/bright) → darker panels (0.50)
+  const GLASS = useMemo(() => {
+    const t = Math.max(0, Math.min(1, (altitude - 0.3) / 2.2));
+    const opacity = 0.06 + t * 0.44;
+    return {
+      background: `rgba(0,0,0,${opacity.toFixed(2)})`,
+      backdropFilter: 'blur(20px)',
+      WebkitBackdropFilter: 'blur(20px)',
+    };
+  }, [altitude]);
 
   // WebSocket for real-time events
   const { isConnected } = useWebSocket();
@@ -96,19 +104,17 @@ export default function App() {
           <SensorsGrid />
         </aside>
 
-        {/* Right side — filter card + live feed card, separate */}
+        {/* Right side — filter + live feed */}
         <div style={{ position: 'absolute', right: 48, top: 112, bottom: 112, width: 320, display: 'flex', flexDirection: 'column', gap: 12, pointerEvents: 'auto' }}>
-          {/* Filter card */}
           <div style={{ padding: '12px 14px', borderRadius: 12, ...GLASS }}>
             <FilterBar />
           </div>
-          {/* Live Feed card */}
           <div style={{ flex: 1, minHeight: 0, padding: 16, borderRadius: 16, ...GLASS, display: 'flex', flexDirection: 'column' }}>
             <LiveFeed />
           </div>
         </div>
 
-        {/* Timeline — component positions itself */}
+        {/* Timeline */}
         <TimelineSlider />
       </div>
     </>

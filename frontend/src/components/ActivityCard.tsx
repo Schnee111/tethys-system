@@ -1,9 +1,11 @@
 import { useDataStore } from '../stores/dataStore';
 import { useGlobeStore } from '../stores/globeStore';
+import { useGlassStyle } from '../utils/glass';
 
 export function ActivityCard() {
   const { events, anomalies, status } = useDataStore();
   const { activeCategories, minMagnitude, maxMagnitude } = useGlobeStore();
+  const glass = useGlassStyle();
 
   const sourceCount = status ? Object.keys(status.collectors).length : 0;
   const activeSources = status ? Object.values(status.collectors).filter((c: any) => c.status === 'ok').length : 0;
@@ -29,7 +31,7 @@ export function ActivityCard() {
     <div style={{
       padding: '12px 14px',
       borderRadius: 12,
-      background: 'rgba(0,0,0,0.45)',
+      ...glass,
       backdropFilter: 'blur(16px)',
       display: 'flex',
       justifyContent: 'space-between',

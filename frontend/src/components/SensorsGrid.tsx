@@ -1,7 +1,9 @@
 import { useDataStore } from '../stores/dataStore';
+import { useGlassStyle } from '../utils/glass';
 
 export function SensorsGrid() {
   const { status } = useDataStore();
+  const glass = useGlassStyle();
   const collectors = status?.collectors || {};
   const sources = [
     { key: 'seismic', label: 'SEISMIC' },
@@ -18,7 +20,7 @@ export function SensorsGrid() {
     <div style={{
       padding: '8px 10px',
       borderRadius: '10px',
-      background: 'rgba(0,0,0,0.45)',
+      ...glass,
       backdropFilter: 'blur(16px)',
       textAlign: 'left',
       fontSize: 9,

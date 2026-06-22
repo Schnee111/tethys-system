@@ -29,7 +29,7 @@ interface PulseRing {
 export function EarthGlobe() {
   const globeRef = useRef<any>(null);
   const { events } = useDataStore();
-  const { activeCategories, minMagnitude, maxMagnitude, timelinePercent, selectedEvent } = useGlobeStore();
+  const { activeCategories, minMagnitude, maxMagnitude, timelinePercent, selectedEvent, setAltitude } = useGlobeStore();
   const [size, setSize] = useState({ w: window.innerWidth, h: window.innerHeight });
   const prevEventIdRef = useRef<string | null>(null);
   const ringsGroupRef = useRef<THREE.Group>(new THREE.Group());
@@ -207,6 +207,7 @@ export function EarthGlobe() {
       showAtmosphere={true}
       atmosphereColor="#38bdf8"
       atmosphereAltitude={0.2}
+      onZoom={(pov: any) => setAltitude(pov.altitude || 2.0)}
       pointsData={points}
       pointLat="lat"
       pointLng="lng"
