@@ -12,6 +12,7 @@ import { GoesCard } from './components/GoesCard';
 import { SpaceWeatherCard } from './components/SpaceWeatherCard';
 import { VolcanicCard } from './components/VolcanicCard';
 import { AtmosphericCard } from './components/AtmosphericCard';
+import { CollapsibleSection } from './components/CollapsibleSection';
 import { ActivityCard } from './components/ActivityCard';
 import { FilterBar } from './components/FilterBar';
 import { TimelineSlider } from './components/TimelineSlider';
@@ -88,14 +89,23 @@ export default function App() {
           </div>
         </div>
 
-        {/* Left panel — scrollable */}
-        <aside style={{ position: 'absolute', left: 48, top: 112, bottom: 112, width: 320, display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto', pointerEvents: 'auto' }}>
+        {/* Left panel — grouped, collapsible */}
+        <aside style={{ position: 'absolute', left: 48, top: 112, bottom: 112, width: 320, display: 'flex', flexDirection: 'column', gap: 8, overflowY: 'auto', pointerEvents: 'auto' }}>
+          {/* Always visible */}
           <ActivityCard />
-          <SolarWindCard />
-          <GoesCard />
-          <SpaceWeatherCard />
-          <VolcanicCard />
-          <AtmosphericCard />
+
+          {/* Space Weather group */}
+          <CollapsibleSection title="Space Weather" defaultOpen={true} summary="Solar · GOES · DONKI">
+            <SolarWindCard />
+            <GoesCard />
+            <SpaceWeatherCard />
+          </CollapsibleSection>
+
+          {/* Earth Activity group */}
+          <CollapsibleSection title="Earth Activity" defaultOpen={false} summary="Volcanic · Atmospheric">
+            <VolcanicCard />
+            <AtmosphericCard />
+          </CollapsibleSection>
         </aside>
 
         {/* Right side — filter + live feed */}
