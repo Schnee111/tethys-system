@@ -229,6 +229,9 @@ export function EarthGlobe() {
       showAtmosphere={true}
       atmosphereColor="#38bdf8"
       atmosphereAltitude={0.2}
+      onZoom={(pov: any) => {
+        if (pov?.altitude != null) setAltitude(pov.altitude);
+      }}
       pointsData={points}
       pointLat="lat"
       pointLng="lng"
