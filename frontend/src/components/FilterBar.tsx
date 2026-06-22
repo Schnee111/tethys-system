@@ -122,11 +122,11 @@ export function FilterBar() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        <SlidersHorizontal style={{ width: 12, height: 12, color: '#52525b' }} />
+        <SlidersHorizontal style={{ width: 12, height: 12, color: '#71717a' }} />
         <span style={{
           fontFamily: 'var(--font-mono)',
           fontSize: 8,
-          color: '#52525b',
+          color: '#71717a',
           textTransform: 'uppercase',
           letterSpacing: '0.1em',
         }}>
@@ -159,14 +159,14 @@ export function FilterBar() {
             >
               <Icon style={{
                 width: 13, height: 13,
-                color: active ? d.color : '#3f3f46',
+                color: active ? d.color : '#71717a',
                 transition: 'color 0.15s',
               }} />
               <span style={{
                 fontFamily: 'var(--font-mono)',
                 fontSize: 8,
                 letterSpacing: '0.12em',
-                color: active ? '#d4d4d8' : '#3f3f46',
+                color: active ? '#e4e4e7' : '#a1a1aa',
                 textTransform: 'uppercase',
                 fontWeight: 600,
                 transition: 'color 0.15s',
@@ -190,7 +190,7 @@ export function FilterBar() {
           Mag
         </span>
 
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#71717a', minWidth: 14, textAlign: 'right' }}>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#a1a1aa', minWidth: 14, textAlign: 'right' }}>
           {minMagnitude}
         </span>
 

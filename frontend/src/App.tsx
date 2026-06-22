@@ -66,7 +66,7 @@ export default function App() {
         {/* HUD — top right */}
         <div style={{ position: 'absolute', top: 32, right: 48, display: 'flex', alignItems: 'center', gap: 24, padding: '4px 24px', borderRadius: 9999, ...GLASS, pointerEvents: 'auto' }}>
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.05em', color: '#71717a', textTransform: 'uppercase' }}>
-            OPERATOR: DAFFA
+            OPERATOR: Shorekeeper
           </span>
           {isConnected ? (
             <Wifi style={{ width: 16, height: 16, color: '#34d399' }} />

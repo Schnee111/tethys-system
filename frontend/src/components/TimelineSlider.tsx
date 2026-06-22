@@ -1,9 +1,11 @@
 import { useRef, useCallback, useEffect, useState } from 'react';
 import { useGlobeStore } from '../stores/globeStore';
+import { useGlassStyle } from '../utils/glass';
 import { Play, Pause, RotateCcw } from 'lucide-react';
 
 export function TimelineSlider() {
   const { timelinePercent, setTimelinePercent, isLive, setLive } = useGlobeStore();
+  const glass = useGlassStyle();
   const [dragging, setDragging] = useState(false);
   const trackRef = useRef<HTMLDivElement>(null);
 
@@ -62,7 +64,7 @@ export function TimelineSlider() {
       display: 'flex',
       alignItems: 'center',
       gap: 16,
-      background: 'rgba(255,255,255,0.04)',
+      ...glass,
       backdropFilter: 'blur(40px)',
       WebkitBackdropFilter: 'blur(40px)',
       borderRadius: 9999,

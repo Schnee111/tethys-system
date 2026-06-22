@@ -55,9 +55,15 @@ export function EarthGlobe() {
     const controls = globe.controls();
     const onControlsChange = () => {
       try {
-        const alt = globe.pointOfView().altitude;
-        if (typeof alt === 'number') setAltitude(alt);
-      } catch {}
+        const pov = globe.pointOfView();
+        const alt = pov?.altitude;
+        if (typeof alt === 'number') {
+          console.log('[GLOBE] altitude:', alt.toFixed(3));
+          setAltitude(alt);
+        }
+      } catch (e) {
+        console.error('[GLOBE] error:', e);
+      }
     };
     controls.addEventListener('change', onControlsChange);
     onControlsChange(); // Initial
