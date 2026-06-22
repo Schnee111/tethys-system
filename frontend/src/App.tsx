@@ -13,9 +13,9 @@ import { TimelineSlider } from './components/TimelineSlider';
 
 // Shared glassmorphism style
 const GLASS = {
-  background: 'rgba(255,255,255,0.06)',
-  backdropFilter: 'blur(16px)',
-  WebkitBackdropFilter: 'blur(16px)',
+  background: 'rgba(0,0,0,0.45)',
+  backdropFilter: 'blur(20px)',
+  WebkitBackdropFilter: 'blur(20px)',
 } as const;
 
 export default function App() {

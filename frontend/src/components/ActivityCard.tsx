@@ -29,7 +29,7 @@ export function ActivityCard() {
     <div style={{
       padding: '12px 14px',
       borderRadius: 12,
-      background: 'rgba(255,255,255,0.06)',
+      background: 'rgba(0,0,0,0.45)',
       backdropFilter: 'blur(16px)',
       display: 'flex',
       justifyContent: 'space-between',
