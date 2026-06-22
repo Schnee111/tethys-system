@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useMemo } from 'react';
 import { LineChart, Line, XAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { useGlassStyle } from '../../utils/glass';
-import { api } from '../../api/client';
+import { useDataStore } from '../../stores/dataStore';
 
 const CLASSES = [
   { label: 'A', flux: 1e-8, color: '#4ade80' },
@@ -13,36 +13,30 @@ const CLASSES = [
 
 export function GoesChart() {
   const glass = useGlassStyle();
-  const [rawData, setRawData] = useState<any[]>([]);
+  const rawData = useDataStore(s => s.rawGoes);
 
-  useEffect(() => {
-    const fetch = () => {
-      api.getGoesXray({ hours: 24 }).then((res) => {
-        if (res?.readings?.length > 0) {
-          const filtered = res.readings
-            .filter((r: any) => r.energy_band === '0.1-0.8nm')
-            .map((r: any) => ({
-              time: new Date(r.time).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
-              flux: r.flux,
-            }))
-            .reverse();
-          setRawData(filtered.length > 50 ? filtered.filter((_: any, i: number) => i % Math.ceil(filtered.length / 50) === 0) : filtered);
-        }
-      }).catch(() => {});
-    };
-    fetch();
-    const interval = setInterval(fetch, 60000);
-    return () => clearInterval(interval);
-  }, []);
+  // Filter to xray 0.1-0.8nm band and downsample
+  const chartData = useMemo(() => {
+    const filtered = rawData
+      .filter(r => r.energy_band === '0.1-0.8nm')
+      .map(r => ({
+        time: new Date(r.time).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
+        flux: r.flux,
+        logFlux: Math.log10(r.flux),
+      }));
 
-  const currentFlux = rawData.length > 0 ? rawData[rawData.length - 1].flux : 0;
+    // Downsample if too many points
+    if (filtered.length > 50) {
+      const step = Math.ceil(filtered.length / 50);
+      return filtered.filter((_, i) => i % step === 0);
+    }
+    return filtered;
+  }, [rawData]);
+
+  const currentFlux = chartData.length > 0
+    ? rawData.filter(r => r.energy_band === '0.1-0.8nm').slice(-1)[0]?.flux ?? 0
+    : 0;
   const currentClass = CLASSES.reduce((acc, c) => currentFlux >= c.flux ? c : acc, CLASSES[0]);
-
-  // Log transform for display (log10 of flux)
-  const chartData = rawData.map(d => ({
-    ...d,
-    logFlux: Math.log10(d.flux),
-  }));
 
   return (
     <div style={{ padding: '14px', borderRadius: 16, ...glass, display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -54,7 +48,7 @@ export function GoesChart() {
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: currentClass.color, fontWeight: 700 }}>
             {currentClass.label}
           </span>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#52525b' }}>24h</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#52525b' }}>24h · live</span>
         </div>
       </div>
       <div style={{ height: 56 }}>

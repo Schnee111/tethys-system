@@ -1,18 +1,11 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { useGlassStyle } from '../../utils/glass';
-import { api } from '../../api/client';
+import { useDataStore } from '../../stores/dataStore';
 
 export function SeismicChart() {
   const glass = useGlassStyle();
-  const [events, setEvents] = useState<any[]>([]);
-
-  useEffect(() => {
-    const fetch = () => api.getSeismic({ hours: 24, limit: 1000 }).then((res) => setEvents(res.events || [])).catch(() => {});
-    fetch();
-    const interval = setInterval(fetch, 60000);
-    return () => clearInterval(interval);
-  }, []);
+  const events = useDataStore(s => s.rawSeismic);
 
   // Bucket events by hour
   const data = useMemo(() => {
@@ -41,7 +34,7 @@ export function SeismicChart() {
         <span style={{ fontSize: 9, letterSpacing: '0.1em', color: 'rgba(161,161,170,0.8)', textTransform: 'uppercase', fontWeight: 600 }}>
           Seismic Activity
         </span>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#52525b' }}>24h</span>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#52525b' }}>24h · live</span>
       </div>
       <div style={{ height: 64 }}>
         <ResponsiveContainer width="100%" height="100%">

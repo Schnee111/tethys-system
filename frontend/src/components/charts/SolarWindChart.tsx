@@ -1,7 +1,7 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { useGlassStyle } from '../../utils/glass';
-import { api } from '../../api/client';
+import { useDataStore } from '../../stores/dataStore';
 
 function MiniChart({ data, dataKey, color, label, unit }: {
   data: any[]; dataKey: string; color: string; label: string; unit: string;
@@ -61,25 +61,25 @@ function MiniChart({ data, dataKey, color, label, unit }: {
 
 export function SolarWindChart() {
   const glass = useGlassStyle();
-  const [data, setData] = useState<any[]>([]);
+  const rawSolarWind = useDataStore(s => s.rawSolarWind);
 
-  useEffect(() => {
-    const fetch = () => {
-      api.getSolarWindHistory({ hours: 24 }).then((res) => {
-        if (res?.readings?.length > 0) {
-          const points = res.readings.map((r: any) => ({
-            time: new Date(r.time).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
-            speed: r.speed,
-            density: r.density,
-          }));
-          setData(points.length > 50 ? points.filter((_: any, i: number) => i % Math.ceil(points.length / 50) === 0) : points);
-        }
-      }).catch(() => {});
-    };
-    fetch();
-    const interval = setInterval(fetch, 60000);
-    return () => clearInterval(interval);
-  }, []);
+  // Merge plasma + mag records into chart-ready points
+  const data = useMemo(() => {
+    // Group by time (within 1 minute tolerance) and merge plasma + mag
+    const plasmaRecords = rawSolarWind.filter(r => r.data_type === 'plasma');
+    const points = plasmaRecords.map(r => ({
+      time: new Date(r.time).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
+      speed: r.speed ?? null,
+      density: r.density ?? null,
+    }));
+
+    // Downsample if too many points
+    if (points.length > 50) {
+      const step = Math.ceil(points.length / 50);
+      return points.filter((_, i) => i % step === 0);
+    }
+    return points;
+  }, [rawSolarWind]);
 
   return (
     <div style={{ padding: '14px', borderRadius: 16, ...glass, display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -87,7 +87,7 @@ export function SolarWindChart() {
         <span style={{ fontSize: 9, letterSpacing: '0.1em', color: 'rgba(161,161,170,0.8)', textTransform: 'uppercase', fontWeight: 600 }}>
           Solar Wind
         </span>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#52525b' }}>24h</span>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#52525b' }}>24h · live</span>
       </div>
       <MiniChart data={data} dataKey="speed" color="#fbbf24" label="Speed" unit="km/s" />
       <MiniChart data={data} dataKey="density" color="#60a5fa" label="Density" unit="p/cm³" />

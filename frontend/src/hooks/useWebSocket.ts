@@ -8,7 +8,7 @@
 
 import { useEffect, useRef, useCallback } from 'react';
 import { useDataStore } from '../stores/dataStore';
-import { useGlobeStore } from '../stores/globeStore';
+import type { RawSeismicEvent, RawGoesReading, RawSolarWindReading } from '../stores/dataStore';
 import type { PlanetaryEvent, Anomaly } from '../types';
 
 // Transform raw DB row → PlanetaryEvent
@@ -98,6 +98,48 @@ function transformSpaceWeather(s: any): Anomaly {
   };
 }
 
+// Normalize raw DB rows into chart-ready types
+function normalizeRawSeismic(rows: any[]): RawSeismicEvent[] {
+  return rows.map(r => ({
+    time: r.time,
+    event_id: r.event_id,
+    magnitude: r.magnitude ?? 0,
+    latitude: r.latitude ?? 0,
+    longitude: r.longitude ?? 0,
+    depth_km: r.depth_km ?? null,
+    place: r.place ?? null,
+    type: r.type ?? 'earthquake',
+    sig: r.sig ?? null,
+    felt: r.felt ?? null,
+    alert: r.alert ?? null,
+    tsunami: r.tsunami ?? 0,
+  }));
+}
+
+function normalizeRawGoes(rows: any[]): RawGoesReading[] {
+  return rows.map(r => ({
+    time: r.time,
+    flux_type: r.flux_type ?? 'xray',
+    energy_band: r.energy_band ?? '0.1-0.8nm',
+    flux: r.flux ?? 0,
+    satellite: r.satellite ?? 'goes-primary',
+  }));
+}
+
+function normalizeRawSolarWind(rows: any[]): RawSolarWindReading[] {
+  return rows.map(r => ({
+    time: r.time,
+    data_type: r.data_type ?? (r.speed != null ? 'plasma' : 'mag'),
+    density: r.density ?? undefined,
+    speed: r.speed ?? undefined,
+    temperature: r.temperature ?? undefined,
+    bt: r.bt ?? undefined,
+    bx_gsm: r.bx_gsm ?? undefined,
+    by_gsm: r.by_gsm ?? undefined,
+    bz_gsm: r.bz_gsm ?? undefined,
+  }));
+}
+
 // WebSocket URL — Vite proxies /ws to backend in dev, same origin in prod
 function getWsUrl(): string {
   const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -126,7 +168,14 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
   const setWsConnected = useDataStore(s => s.setWsConnected);
   const setEvents = useDataStore(s => s.setEvents);
   const addEvents = useDataStore(s => s.addEvents);
-  const setActivity = useDataStore(s => s.setActivity);
+
+  // Raw data store actions
+  const setRawSeismic = useDataStore(s => s.setRawSeismic);
+  const setRawGoes = useDataStore(s => s.setRawGoes);
+  const setRawSolarWind = useDataStore(s => s.setRawSolarWind);
+  const addRawSeismic = useDataStore(s => s.addRawSeismic);
+  const addRawGoes = useDataStore(s => s.addRawGoes);
+  const addRawSolarWind = useDataStore(s => s.addRawSolarWind);
 
   const connect = useCallback(() => {
     if (!isMounted.current || !enabled) return;
@@ -164,25 +213,27 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
           }
 
           case 'sync_response': {
-            // Bulk data on connect — replace all events
+            // Bulk data on connect — replace all events + raw chart data
             const data = msg.data || {};
             const allEvents: PlanetaryEvent[] = [];
 
             if (data.seismic) {
               allEvents.push(...data.seismic.map(transformSeismic));
+              setRawSeismic(normalizeRawSeismic(data.seismic));
             }
             if (data.solar_wind) {
               allEvents.push(...data.solar_wind.map(transformSolarWind));
+              setRawSolarWind(normalizeRawSolarWind(data.solar_wind));
             }
             if (data.goes) {
               allEvents.push(...data.goes.map(transformGoes));
+              setRawGoes(normalizeRawGoes(data.goes));
             }
             if (data.volcanic) {
               allEvents.push(...data.volcanic.map(transformVolcanic));
             }
 
             setEvents(allEvents);
-            // Don't set anomalies from sync — REST API handles that with proper z-scores
 
             console.log(`[WS] Sync: ${allEvents.length} events loaded`);
             break;
@@ -191,18 +242,30 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
           case 'seismic': {
             const records = msg.data || [];
             addEvents(records.map(transformSeismic));
+            addRawSeismic(normalizeRawSeismic(records));
             break;
           }
 
           case 'solar_wind': {
             const records = msg.data || [];
             addEvents(records.map(transformSolarWind));
+            addRawSolarWind(normalizeRawSolarWind(records));
+            break;
+          }
+
+          case 'goes_flux': {
+            // Backend collector name is "goes_flux" (from GOESFluxCollector.name)
+            const records = msg.data || [];
+            addEvents(records.map(transformGoes));
+            addRawGoes(normalizeRawGoes(records));
             break;
           }
 
           case 'goes': {
+            // Fallback for older backend or alternate naming
             const records = msg.data || [];
             addEvents(records.map(transformGoes));
+            addRawGoes(normalizeRawGoes(records));
             break;
           }
 
@@ -240,7 +303,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     ws.onerror = (err) => {
       console.error('[WS] Error:', err);
     };
-  }, [enabled, reconnectInterval, maxReconnectAttempts, setWsConnected, setEvents, addEvents]);
+  }, [enabled, reconnectInterval, maxReconnectAttempts, setWsConnected, setEvents, addEvents, setRawSeismic, setRawGoes, setRawSolarWind, addRawSeismic, addRawGoes, addRawSolarWind]);
 
   useEffect(() => {
     isMounted.current = true;
