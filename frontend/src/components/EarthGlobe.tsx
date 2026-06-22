@@ -78,6 +78,21 @@ export function EarthGlobe() {
     };
   }, []);
 
+  // Poll altitude for dynamic glass opacity
+  useEffect(() => {
+    let raf: number;
+    const poll = () => {
+      const globe = globeRef.current;
+      if (globe) {
+        const alt = globe.pointOfView().altitude;
+        if (typeof alt === 'number') setAltitude(alt);
+      }
+      raf = requestAnimationFrame(poll);
+    };
+    raf = requestAnimationFrame(poll);
+    return () => cancelAnimationFrame(raf);
+  }, [setAltitude]);
+
   // Fly to selected event
   useEffect(() => {
     const globe = globeRef.current;
@@ -207,7 +222,6 @@ export function EarthGlobe() {
       showAtmosphere={true}
       atmosphereColor="#38bdf8"
       atmosphereAltitude={0.2}
-      onZoom={(pov: any) => setAltitude(pov.altitude || 2.0)}
       pointsData={points}
       pointLat="lat"
       pointLng="lng"
