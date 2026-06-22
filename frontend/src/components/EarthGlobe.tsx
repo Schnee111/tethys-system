@@ -4,6 +4,7 @@ import Globe from 'react-globe.gl';
 import { useDataStore } from '../stores/dataStore';
 import { useGlobeStore } from '../stores/globeStore';
 import { DOMAIN_COLORS } from '../utils/colors';
+import { api } from '../api/client';
 
 const GLOBE_HOURS = 2;
 const FLY_ALTITUDE = 0.3; // Very close zoom when focused
@@ -33,6 +34,7 @@ export function EarthGlobe() {
   const [size, setSize] = useState({ w: window.innerWidth, h: window.innerHeight });
   const prevEventIdRef = useRef<string | null>(null);
   const ringsGroupRef = useRef<THREE.Group>(new THREE.Group());
+  const [heatmapPoints, setHeatmapPoints] = useState<any[]>([]);
   const pulseRingsRef = useRef<PulseRing[]>([]);
   const animFrameRef = useRef<number>(0);
 
@@ -40,6 +42,22 @@ export function EarthGlobe() {
     const onResize = () => setSize({ w: window.innerWidth, h: window.innerHeight });
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  // Fetch atmospheric data for heatmap
+  useEffect(() => {
+    api.getAtmospheric({ hours: 24 }).then((res) => {
+      if (res?.readings?.length > 0) {
+        const points = res.readings
+          .filter((r: any) => r.temperature != null)
+          .map((r: any) => ({
+            lat: r.latitude,
+            lng: r.longitude,
+            weight: (r.temperature + 20) / 60, // normalize: -20°C → 0, 40°C → 1
+          }));
+        setHeatmapPoints(points);
+      }
+    }).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -245,6 +263,15 @@ export function EarthGlobe() {
       showAtmosphere={true}
       atmosphereColor="#38bdf8"
       atmosphereAltitude={0.2}
+      // Heatmap — atmospheric temperature
+      heatmapsData={[heatmapPoints]}
+      heatmapPointLat="lat"
+      heatmapPointLng="lng"
+      heatmapPointWeight="weight"
+      heatmapBandwidth={3}
+      heatmapColorSaturation={2}
+      heatmapBaseAltitude={0.005}
+      heatmapTopAltitude={0.05}
       pointsData={points}
       pointLat="lat"
       pointLng="lng"
