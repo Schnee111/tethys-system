@@ -42,7 +42,7 @@ export function SeismicChart() {
         </span>
         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#52525b' }}>24h</span>
       </div>
-      <div style={{ height: 80 }}>
+      <div style={{ height: 64 }}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
             <XAxis
