@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useDataStore } from '../stores/dataStore';
 import { useGlobeStore } from '../stores/globeStore';
 import { useGlassStyle } from '../utils/glass';
@@ -6,24 +5,21 @@ import type { Anomaly } from '../types';
 import { severityColor } from '../utils/colors';
 
 function AnomalyItem({ a }: { a: Anomaly }) {
-  const [hovered, setHovered] = useState(false);
   const z = a.z_score ?? 0;
   const dotColor = severityColor(a.severity);
-  const valueColor = severityColor(a.severity);
 
   return (
     <div
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
+      onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
       style={{
         display: 'flex',
         alignItems: 'flex-start',
         gap: 8,
-        padding: '6px 8px',
-        margin: '0 -8px',
-        borderRadius: 6,
+        padding: '8px',
+        borderRadius: 8,
         cursor: 'pointer',
-        background: hovered ? 'rgba(255,255,255,0.04)' : 'transparent',
+        background: 'transparent',
         transition: 'background 0.15s ease',
       }}
     >

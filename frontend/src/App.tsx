@@ -7,9 +7,9 @@ import { api } from './api/client';
 import { useGlassStyle } from './utils/glass';
 import { EarthGlobe } from './components/EarthGlobe';
 import { LiveFeed } from './components/LiveFeed';
-import { AnomalyPanel } from './components/AnomalyPanel';
+import { SolarWindCard } from './components/SolarWindCard';
+import { GoesCard } from './components/GoesCard';
 import { ActivityCard } from './components/ActivityCard';
-import { SensorsGrid } from './components/SensorsGrid';
 import { FilterBar } from './components/FilterBar';
 import { TimelineSlider } from './components/TimelineSlider';
 
@@ -88,8 +88,8 @@ export default function App() {
         {/* Left panel */}
         <aside style={{ position: 'absolute', left: 48, top: 112, bottom: 112, width: 320, display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto', pointerEvents: 'auto' }}>
           <ActivityCard />
-          <AnomalyPanel />
-          <SensorsGrid />
+          <SolarWindCard />
+          <GoesCard />
         </aside>
 
         {/* Right side — filter + live feed */}
