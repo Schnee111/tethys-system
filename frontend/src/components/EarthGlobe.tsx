@@ -11,7 +11,7 @@ const GLOBE_HOURS = 2;
 export function EarthGlobe() {
   const globeRef = useRef<any>(null);
   const { events } = useDataStore();
-  const { activeCategories, minMagnitude, timelinePercent } = useGlobeStore();
+  const { activeCategories, minMagnitude, maxMagnitude, timelinePercent } = useGlobeStore();
   const [size, setSize] = useState({ w: window.innerWidth, h: window.innerHeight });
 
   useEffect(() => {
@@ -42,11 +42,12 @@ export function EarthGlobe() {
     return events.filter(e => {
       if (!activeCategories.has(e.domain)) return false;
       if ((e.magnitude || 0) < minMagnitude) return false;
+      if ((e.magnitude || 0) > maxMagnitude) return false;
       const eventTime = new Date(e.time).getTime();
       if (eventTime < cutoffTime) return false;
       return true;
     });
-  }, [events, activeCategories, minMagnitude, cutoffTime]);
+  }, [events, activeCategories, minMagnitude, maxMagnitude, cutoffTime]);
 
   // Pillar lines — color by DOMAIN, height by magnitude
   const points = filteredEvents.map((e) => ({

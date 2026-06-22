@@ -7,12 +7,14 @@ interface GlobeState {
   timelinePercent: number;
   activeCategories: Set<string>;
   minMagnitude: number;
+  maxMagnitude: number;
   setSelectedEvent: (event: PlanetaryEvent | null) => void;
   setLive: (live: boolean) => void;
   setTimelinePercent: (percent: number) => void;
   setActiveCategories: (categories: Set<string>) => void;
   toggleCategory: (category: string) => void;
   setMinMagnitude: (mag: number) => void;
+  setMaxMagnitude: (mag: number) => void;
 }
 
 export const useGlobeStore = create<GlobeState>((set) => ({
@@ -20,7 +22,8 @@ export const useGlobeStore = create<GlobeState>((set) => ({
   isLive: true,
   timelinePercent: 100,
   activeCategories: new Set(['seismic', 'solar', 'atmospheric']),
-  minMagnitude: 2.0,
+  minMagnitude: 0,
+  maxMagnitude: 8,
   setSelectedEvent: (selectedEvent) => set({ selectedEvent }),
   setLive: (isLive) => set({ isLive }),
   setTimelinePercent: (timelinePercent) => set({ timelinePercent }),
@@ -35,4 +38,5 @@ export const useGlobeStore = create<GlobeState>((set) => ({
     return { activeCategories: next };
   }),
   setMinMagnitude: (minMagnitude) => set({ minMagnitude }),
+  setMaxMagnitude: (maxMagnitude) => set({ maxMagnitude }),
 }));
