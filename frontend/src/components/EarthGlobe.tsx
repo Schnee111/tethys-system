@@ -6,7 +6,7 @@ import { useGlobeStore } from '../stores/globeStore';
 import { DOMAIN_COLORS } from '../utils/colors';
 
 const GLOBE_HOURS = 2;
-const FLY_ALTITUDE = 0.8; // Closer when focused (was 1.0)
+const FLY_ALTITUDE = 0.5; // Close zoom when focused
 const FLY_DURATION = 1200;
 const GLOBE_RADIUS = 100;
 const PULSE_COUNT = 3;
@@ -174,15 +174,20 @@ export function EarthGlobe() {
     color: DOMAIN_COLORS[e.domain] || '#6b7280',
   }));
 
-  // Marker spheres
-  const markers = filteredEvents.map((e) => ({
-    lat: e.latitude,
-    lng: e.longitude,
-    alt: 0.01 + (e.magnitude || 1) * 0.004,
-    size: Math.max(0.15, (e.magnitude || 1) * 0.05),
-    color: DOMAIN_COLORS[e.domain] || '#6b7280',
-    label: `${e.domain.toUpperCase()} — M${e.magnitude?.toFixed(1) || '?'}\n${e.location}\nDepth: ${e.depth_km?.toFixed(1) || '?'}km`,
-  }));
+  // Marker spheres — selected one is bigger + highlighted
+  const markers = filteredEvents.map((e) => {
+    const isSelected = selectedEvent?.event_id === e.event_id && selectedEvent?.time === e.time;
+    const mag = e.magnitude || 1;
+    return {
+      lat: e.latitude,
+      lng: e.longitude,
+      alt: 0.01 + mag * 0.004,
+      size: isSelected ? Math.max(0.3, mag * 0.08) : Math.max(0.15, mag * 0.05),
+      color: isSelected ? '#ffffff' : (DOMAIN_COLORS[e.domain] || '#6b7280'),
+      isSelected,
+      label: `${e.domain.toUpperCase()} — M${e.magnitude?.toFixed(1) || '?'}\n${e.location}\nDepth: ${e.depth_km?.toFixed(1) || '?'}km`,
+    };
+  });
 
   return (
     <Globe
@@ -208,10 +213,36 @@ export function EarthGlobe() {
       objectLng="lng"
       objectAltitude="alt"
       objectLabel="label"
-      objectThreeObject={(d: any) => new THREE.Mesh(
-        new THREE.SphereGeometry(d.size, 16, 16),
-        new THREE.MeshBasicMaterial({ color: new THREE.Color(d.color), transparent: true, opacity: 0.95 })
-      )}
+      objectThreeObject={(d: any) => {
+        const group = new THREE.Group();
+
+        // Main sphere
+        const sphere = new THREE.Mesh(
+          new THREE.SphereGeometry(d.size, 16, 16),
+          new THREE.MeshBasicMaterial({
+            color: new THREE.Color(d.color),
+            transparent: true,
+            opacity: d.isSelected ? 1.0 : 0.95,
+          })
+        );
+        group.add(sphere);
+
+        // Selected marker gets a bright glow ring
+        if (d.isSelected) {
+          const glow = new THREE.Mesh(
+            new THREE.RingGeometry(d.size * 1.5, d.size * 2.2, 32),
+            new THREE.MeshBasicMaterial({
+              color: new THREE.Color('#ffffff'),
+              transparent: true,
+              opacity: 0.3,
+              side: THREE.DoubleSide,
+            })
+          );
+          group.add(glow);
+        }
+
+        return group;
+      }}
     />
   );
 }
