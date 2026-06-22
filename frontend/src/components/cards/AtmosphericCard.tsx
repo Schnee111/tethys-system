@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
-import { useGlassStyle } from '../utils/glass';
-import { api } from '../api/client';
+import { useGlassStyle } from '../../utils/glass';
+import { api } from '../../api/client';
 
 interface AtmosphericReading {
   time: string;

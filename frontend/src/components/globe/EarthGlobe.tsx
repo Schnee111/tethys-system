@@ -1,9 +1,9 @@
 import { useRef, useEffect, useState, useMemo } from 'react';
 import * as THREE from 'three';
 import Globe from 'react-globe.gl';
-import { useDataStore } from '../stores/dataStore';
-import { useGlobeStore } from '../stores/globeStore';
-import { DOMAIN_COLORS } from '../utils/colors';
+import { useDataStore } from '../../stores/dataStore';
+import { useGlobeStore } from '../../stores/globeStore';
+import { DOMAIN_COLORS } from '../../utils/colors';
 
 const GLOBE_HOURS = 2;
 const FLY_ALTITUDE = 0.3; // Very close zoom when focused

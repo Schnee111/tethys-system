@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { useGlassStyle } from '../utils/glass';
-import { api } from '../api/client';
+import { useGlassStyle } from '../../utils/glass';
+import { api } from '../../api/client';
 
 function MiniChart({ data, dataKey, color, label, unit }: {
   data: any[]; dataKey: string; color: string; label: string; unit: string;

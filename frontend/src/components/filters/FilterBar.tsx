@@ -1,6 +1,6 @@
 import { useRef, useCallback, useState } from 'react';
 import { Activity, Flame, SlidersHorizontal } from 'lucide-react';
-import { useGlobeStore } from '../stores/globeStore';
+import { useGlobeStore } from '../../stores/globeStore';
 
 const DOMAINS = [
   { key: 'seismic', label: 'Seismic', icon: Activity, color: '#f87171' },

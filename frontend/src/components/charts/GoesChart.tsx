@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
-import { useGlassStyle } from '../utils/glass';
-import { api } from '../api/client';
+import { useGlassStyle } from '../../utils/glass';
+import { api } from '../../api/client';
 
 const CLASSES = [
   { label: 'A', flux: 1e-8, color: '#4ade80' },

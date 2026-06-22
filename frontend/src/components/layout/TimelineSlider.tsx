@@ -1,6 +1,6 @@
 import { useRef, useCallback, useEffect, useState } from 'react';
-import { useGlobeStore } from '../stores/globeStore';
-import { useGlassStyle } from '../utils/glass';
+import { useGlobeStore } from '../../stores/globeStore';
+import { useGlassStyle } from '../../utils/glass';
 import { Play, Pause, RotateCcw } from 'lucide-react';
 
 export function TimelineSlider() {

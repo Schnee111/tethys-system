@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useGlassStyle } from '../utils/glass';
-import { api } from '../api/client';
+import { useGlassStyle } from '../../utils/glass';
+import { api } from '../../api/client';
 
 interface GoesData {
   flux: number;

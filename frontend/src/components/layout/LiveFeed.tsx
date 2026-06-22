@@ -1,11 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useDataStore } from '../stores/dataStore';
-import { useGlobeStore } from '../stores/globeStore';
+import { useDataStore } from '../../stores/dataStore';
+import { useGlobeStore } from '../../stores/globeStore';
 import { motion, AnimatePresence } from 'motion/react';
 import { X } from 'lucide-react';
-import { magnitudeColor, DOMAIN_COLORS } from '../utils/colors';
-import { api } from '../api/client';
-import type { PlanetaryEvent } from '../types';
+import { magnitudeColor, DOMAIN_COLORS } from '../../utils/colors';
+import { api } from '../../api/client';
+import type { PlanetaryEvent } from '../../types';
 
 const TIME_RANGES = [
   { label: '24h', hours: 24 },
