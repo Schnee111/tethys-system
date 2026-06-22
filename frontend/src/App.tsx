@@ -1,9 +1,10 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import { Wifi, WifiOff, Bell, Settings, User } from 'lucide-react';
 import { useDataStore } from './stores/dataStore';
 import { useGlobeStore } from './stores/globeStore';
 import { useWebSocket } from './hooks/useWebSocket';
 import { api } from './api/client';
+import { useGlassStyle } from './utils/glass';
 import { EarthGlobe } from './components/EarthGlobe';
 import { LiveFeed } from './components/LiveFeed';
 import { AnomalyPanel } from './components/AnomalyPanel';
@@ -14,20 +15,7 @@ import { TimelineSlider } from './components/TimelineSlider';
 
 export default function App() {
   const { setStatus, setAnomalies, setActivity, setLoading } = useDataStore();
-  const { altitude } = useGlobeStore();
-
-  // Dynamic glass opacity based on zoom:
-  // Zoomed out (alt=3+, space/dark bg) → lighter panels (0.06)
-  // Zoomed in  (alt=0.3, terrain/bright) → darker panels (0.50)
-  const GLASS = useMemo(() => {
-    const t = Math.max(0, Math.min(1, (altitude - 0.3) / 2.2));
-    const opacity = 0.06 + t * 0.44;
-    return {
-      background: `rgba(0,0,0,${opacity.toFixed(2)})`,
-      backdropFilter: 'blur(20px)',
-      WebkitBackdropFilter: 'blur(20px)',
-    };
-  }, [altitude]);
+  const GLASS = useGlassStyle();
 
   // WebSocket for real-time events
   const { isConnected } = useWebSocket();

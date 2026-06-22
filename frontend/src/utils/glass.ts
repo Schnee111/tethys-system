@@ -10,7 +10,7 @@ export function useGlassStyle() {
   const altitude = useGlobeStore(s => s.altitude);
 
   return useMemo(() => {
-    const opacity = altitude >= 1.0 ? 0.06 : 0.50;
+    const opacity = altitude >= 1.0 ? 0.12 : 0.50;
     return {
       background: `rgba(0,0,0,${opacity})`,
       backdropFilter: 'blur(20px)',
