@@ -47,23 +47,31 @@ export function EarthGlobe() {
     if (!globe) return;
     globe.controls().autoRotate = true;
     globe.controls().autoRotateSpeed = 0.15;
-    // Initial view — not too far
     globe.pointOfView({ altitude: 2.0 }, 0);
     globeInstance = globe;
     globe.scene().add(ringsGroupRef.current);
+
+    // Track altitude via controls change event
+    const controls = globe.controls();
+    const onControlsChange = () => {
+      try {
+        const alt = globe.pointOfView().altitude;
+        if (typeof alt === 'number') setAltitude(alt);
+      } catch {}
+    };
+    controls.addEventListener('change', onControlsChange);
+    onControlsChange(); // Initial
 
     // Animation loop for pulse rings
     const animate = () => {
       pulseRingsRef.current.forEach(pulse => {
         pulse.scale += pulse.speed;
-        const t = pulse.phase; // 0-1, staggered
-        const progress = (pulse.scale + t) % 1; // 0→1 cycle
+        const t = pulse.phase;
+        const progress = (pulse.scale + t) % 1;
 
-        // Expand ring
         const s = 1 + progress * (PULSE_MAX_SCALE - 1);
         pulse.mesh.scale.set(s, s, s);
 
-        // Fade out as it expands
         const mat = pulse.mesh.material as THREE.MeshBasicMaterial;
         mat.opacity = pulse.maxOpacity * (1 - progress);
       });
@@ -73,31 +81,10 @@ export function EarthGlobe() {
 
     return () => {
       cancelAnimationFrame(animFrameRef.current);
+      controls.removeEventListener('change', onControlsChange);
       globeInstance = null;
       globe.scene().remove(ringsGroupRef.current);
     };
-  }, []);
-
-  // Poll altitude for dynamic glass opacity
-  useEffect(() => {
-    let raf: number;
-    let lastAlt = -1;
-    const poll = () => {
-      const globe = globeRef.current;
-      if (globe) {
-        try {
-          const pov = globe.pointOfView();
-          const alt = pov?.altitude;
-          if (typeof alt === 'number' && alt !== lastAlt) {
-            lastAlt = alt;
-            setAltitude(alt);
-          }
-        } catch {}
-      }
-      raf = requestAnimationFrame(poll);
-    };
-    raf = requestAnimationFrame(poll);
-    return () => cancelAnimationFrame(raf);
   }, [setAltitude]);
 
   // Fly to selected event
@@ -229,9 +216,6 @@ export function EarthGlobe() {
       showAtmosphere={true}
       atmosphereColor="#38bdf8"
       atmosphereAltitude={0.2}
-      onZoom={(pov: any) => {
-        if (pov?.altitude != null) setAltitude(pov.altitude);
-      }}
       pointsData={points}
       pointLat="lat"
       pointLng="lng"
