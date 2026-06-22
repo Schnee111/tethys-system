@@ -17,6 +17,7 @@ import { TimelineSlider } from './components/TimelineSlider';
 import { UtcClock } from './components/UtcClock';
 import { SeismicChart } from './components/SeismicChart';
 import { SolarWindChart } from './components/SolarWindChart';
+import { GoesChart } from './components/GoesChart';
 
 export default function App() {
   const { setStatus, setAnomalies, setActivity, setLoading, anomalies, events } = useDataStore();
@@ -109,6 +110,7 @@ export default function App() {
         <aside style={{ position: 'absolute', left: 48, top: 112, bottom: 80, width: 320, display: 'flex', flexDirection: 'column', gap: 12, overflowY: 'auto', pointerEvents: 'auto' }}>
           <SeismicChart />
           <SolarWindChart />
+          <GoesChart />
           <CollapsibleSection title="Solar Monitoring" defaultOpen={false} summary="Solar Wind · GOES">
             <SolarWindCard />
             <GoesCard />
