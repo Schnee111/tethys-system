@@ -98,14 +98,6 @@ export function GoesChart() {
           </LineChart>
         </ResponsiveContainer>
       </div>
-      {/* Class labels — fixed positions */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: 7, padding: '0 2px' }}>
-        {CLASSES.map((c) => (
-          <span key={c.label} style={{ color: currentFlux >= c.flux ? c.color : '#3f3f46', fontWeight: currentFlux >= c.flux ? 700 : 400 }}>
-            {c.label}
-          </span>
-        ))}
-      </div>
     </div>
   );
 }
