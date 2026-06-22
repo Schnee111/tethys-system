@@ -105,15 +105,9 @@ export default function App() {
           <LiveFeed />
         </aside>
 
-        {/* Timeline + magnitude — bottom center */}
-        <div style={{ pointerEvents: 'auto', position: 'fixed', bottom: 48, left: '50%', transform: 'translateX(-50%)', zIndex: 50, display: 'flex', alignItems: 'center', gap: 16 }}>
-          <TimelineSlider />
-        </div>
-
-        {/* Magnitude filter — bottom left */}
-        <div style={{ pointerEvents: 'auto', position: 'fixed', bottom: 52, left: 48, zIndex: 50 }}>
-          <MagnitudeFilter />
-        </div>
+        {/* Controls — components position themselves with fixed */}
+        <TimelineSlider />
+        <MagnitudeFilter />
       </div>
     </>
   );
