@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { useGlassStyle } from '../utils/glass';
 import { api } from '../api/client';
@@ -19,14 +19,14 @@ export function GoesChart() {
   useEffect(() => {
     api.getGoesXray({ hours: 24 }).then((res) => {
       if (res?.readings?.length > 0) {
-        // Filter to 0.1-0.8nm band (standard for NOAA classification)
         const filtered = res.readings
           .filter((r: any) => r.energy_band === '0.1-0.8nm')
           .map((r: any) => ({
             time: new Date(r.time).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
             flux: r.flux,
-          }));
-        // Downsample
+          }))
+          .reverse(); // API returns DESC, chart needs ASC (oldest → newest)
+
         if (filtered.length > 50) {
           const step = Math.ceil(filtered.length / 50);
           setRawData(filtered.filter((_: any, i: number) => i % step === 0));
@@ -37,12 +37,11 @@ export function GoesChart() {
     }).catch(() => {});
   }, []);
 
-  // Find current class
   const currentFlux = rawData.length > 0 ? rawData[rawData.length - 1].flux : 0;
   const currentClass = CLASSES.reduce((acc, c) => currentFlux >= c.flux ? c : acc, CLASSES[0]);
 
   return (
-    <div style={{ padding: '14px', borderRadius: 16, ...glass, display: 'flex', flexDirection: 'column', gap: 8 }}>
+    <div style={{ padding: '14px', borderRadius: 16, ...glass, display: 'flex', flexDirection: 'column', gap: 6 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span style={{ fontSize: 9, letterSpacing: '0.1em', color: 'rgba(161,161,170,0.8)', textTransform: 'uppercase', fontWeight: 600 }}>
           GOES X-ray
@@ -54,24 +53,20 @@ export function GoesChart() {
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#52525b' }}>24h</span>
         </div>
       </div>
-      <div style={{ height: 80 }}>
+      <div style={{ height: 64 }}>
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={rawData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+          <LineChart data={rawData} margin={{ top: 4, right: 4, bottom: 2, left: 0 }}>
             <XAxis
               dataKey="time"
               tick={{ fontSize: 7, fill: '#3f3f46' }}
               axisLine={false}
               tickLine={false}
-              interval={Math.max(0, Math.floor(rawData.length / 6))}
+              interval={Math.max(0, Math.floor(rawData.length / 4))}
             />
-            <YAxis
-              hide
-              scale="log"
-              domain={[1e-8, 1e-4]}
-            />
+            <YAxis hide scale="log" domain={[1e-8, 1e-4]} />
             <Tooltip
               contentStyle={{
-                background: 'rgba(0,0,0,0.8)',
+                background: 'rgba(0,0,0,0.85)',
                 border: '1px solid rgba(255,255,255,0.1)',
                 borderRadius: 8,
                 fontSize: 10,
@@ -93,7 +88,7 @@ export function GoesChart() {
                 y={c.flux}
                 stroke={c.color}
                 strokeDasharray="3 3"
-                strokeOpacity={0.2}
+                strokeOpacity={0.15}
               />
             ))}
             <Line
@@ -107,9 +102,9 @@ export function GoesChart() {
         </ResponsiveContainer>
       </div>
       {/* Class labels */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: 7, color: '#3f3f46' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: 7 }}>
         {CLASSES.map((c) => (
-          <span key={c.label} style={{ color: currentFlux >= c.flux ? c.color : '#3f3f46' }}>
+          <span key={c.label} style={{ color: currentFlux >= c.flux ? c.color : '#3f3f46', fontWeight: currentFlux >= c.flux ? 700 : 400 }}>
             {c.label}
           </span>
         ))}
