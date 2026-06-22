@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import { useGlassStyle } from '../utils/glass';
 import { api } from '../api/client';
 
@@ -40,6 +41,7 @@ function timeAgo(dateStr: string): string {
 export function SpaceWeatherCard() {
   const glass = useGlassStyle();
   const [data, setData] = useState<SpaceWeatherData | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -53,7 +55,7 @@ export function SpaceWeatherCard() {
     return () => clearInterval(interval);
   }, []);
 
-  const events = data?.events?.slice(0, 5) || [];
+  const events = data?.events || [];
 
   return (
     <div style={{ padding: '14px', borderRadius: 16, ...glass, display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -69,14 +71,19 @@ export function SpaceWeatherCard() {
           No recent events
         </span>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 320, overflowY: 'auto' }}>
           {events.map((ev) => {
             const color = eventTypeColor(ev.event_type);
+            const isExpanded = expandedId === ev.event_id;
             const shortDesc = ev.description?.length > 80
               ? ev.description.slice(0, 80) + '…'
               : ev.description || '';
             return (
-              <div key={ev.event_id} style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              <div
+                key={ev.event_id}
+                onClick={() => setExpandedId(isExpanded ? null : ev.event_id)}
+                style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 3 }}
+              >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{
                     fontFamily: 'var(--font-mono)', fontSize: 8, fontWeight: 700,
@@ -89,11 +96,41 @@ export function SpaceWeatherCard() {
                     {timeAgo(ev.time)}
                   </span>
                 </div>
-                {shortDesc && (
+                {!isExpanded && shortDesc && (
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#e4e4e7', lineHeight: 1.4 }}>
                     {shortDesc}
                   </span>
                 )}
+                <AnimatePresence>
+                  {isExpanded && (
+                    <motion.div
+                      key="detail"
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2, ease: 'easeInOut' }}
+                      style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: 4 }}
+                    >
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#e4e4e7', lineHeight: 1.5 }}>
+                        {ev.description || 'No description available.'}
+                      </span>
+                      {ev.link && (
+                        <a
+                          href={ev.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          style={{
+                            fontFamily: 'var(--font-mono)', fontSize: 8, color: '#60a5fa',
+                            textDecoration: 'underline', textDecorationColor: '#60a5fa40',
+                          }}
+                        >
+                          View on NASA DONKI →
+                        </a>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             );
           })}

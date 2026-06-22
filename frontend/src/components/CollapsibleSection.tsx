@@ -4,7 +4,7 @@ import { ChevronDown, ChevronRight } from 'lucide-react';
 interface CollapsibleSectionProps {
   title: string;
   defaultOpen?: boolean;
-  summary?: string; // Shown when collapsed
+  summary?: string;
   children: ReactNode;
 }
 
@@ -12,32 +12,35 @@ export function CollapsibleSection({ title, defaultOpen = true, summary, childre
   const [open, setOpen] = useState(defaultOpen);
 
   return (
-    <div style={{ borderRadius: 12, overflow: 'hidden' }}>
-      {/* Header — always visible, clickable */}
-      <div
+    <div>
+      {/* Header — clickable */}
+      <button
         onClick={() => setOpen(!open)}
         style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '10px 14px',
+          width: '100%',
+          padding: '6px 0',
           cursor: 'pointer',
-          background: 'rgba(255,255,255,0.03)',
-          transition: 'background 0.15s',
+          background: 'none',
+          border: 'none',
+          borderBottom: '1px solid rgba(255,255,255,0.06)',
+          transition: 'opacity 0.15s',
         }}
-        onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
-        onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
+        onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.7'; }}
+        onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           {open
-            ? <ChevronDown style={{ width: 12, height: 12, color: '#71717a' }} />
-            : <ChevronRight style={{ width: 12, height: 12, color: '#71717a' }} />
+            ? <ChevronDown style={{ width: 11, height: 11, color: '#52525b' }} />
+            : <ChevronRight style={{ width: 11, height: 11, color: '#52525b' }} />
           }
           <span style={{
             fontFamily: 'var(--font-mono)',
             fontSize: 9,
             letterSpacing: '0.1em',
-            color: '#a1a1aa',
+            color: '#71717a',
             textTransform: 'uppercase',
             fontWeight: 600,
           }}>
@@ -45,15 +48,15 @@ export function CollapsibleSection({ title, defaultOpen = true, summary, childre
           </span>
         </div>
         {!open && summary && (
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#52525b' }}>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#3f3f46' }}>
             {summary}
           </span>
         )}
-      </div>
+      </button>
 
-      {/* Content — collapsible */}
+      {/* Content */}
       {open && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '12px 0 0 0' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, paddingTop: 12 }}>
           {children}
         </div>
       )}
