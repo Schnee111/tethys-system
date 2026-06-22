@@ -158,3 +158,20 @@ async def get_status():
 async def health_check():
     """Simple health check for load balancers."""
     return {"status": "ok"}
+
+
+# Serve frontend static files (production mode)
+import os
+from pathlib import Path
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+
+STATIC_DIR = Path(__file__).resolve().parent.parent.parent / "static"
+if STATIC_DIR.is_dir():
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str):
+        """Serve frontend SPA — all non-API routes return index.html."""
+        file_path = STATIC_DIR / full_path
+        if file_path.is_file():
+            return FileResponse(file_path)
+        return FileResponse(STATIC_DIR / "index.html")
