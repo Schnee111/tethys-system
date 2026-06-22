@@ -10,22 +10,22 @@ import { LiveFeed } from './components/LiveFeed';
 import { SolarWindCard } from './components/SolarWindCard';
 import { GoesCard } from './components/GoesCard';
 import { SpaceWeatherCard } from './components/SpaceWeatherCard';
-import { VolcanicCard } from './components/VolcanicCard';
 import { AtmosphericCard } from './components/AtmosphericCard';
 import { CollapsibleSection } from './components/CollapsibleSection';
-import { ActivityCard } from './components/ActivityCard';
 import { FilterBar } from './components/FilterBar';
 import { TimelineSlider } from './components/TimelineSlider';
 import { UtcClock } from './components/UtcClock';
+import { SeismicChart } from './components/SeismicChart';
+import { SolarWindChart } from './components/SolarWindChart';
 
 export default function App() {
-  const { setStatus, setAnomalies, setActivity, setLoading } = useDataStore();
+  const { setStatus, setAnomalies, setActivity, setLoading, anomalies, events } = useDataStore();
   const GLASS = useGlassStyle();
 
   // WebSocket for real-time events
   const { isConnected } = useWebSocket();
 
-  // Initial REST fetch for non-WebSocket data (status, anomalies, activity)
+  // Initial REST fetch
   useEffect(() => {
     const fetchMetadata = async () => {
       try {
@@ -48,23 +48,36 @@ export default function App() {
     return () => clearInterval(interval);
   }, []);
 
+  const sourceCount = 6;
+
   return (
     <>
-      {/* Globe — IS the background, fills entire viewport */}
+      {/* Globe — IS the background */}
       <EarthGlobe />
 
-      {/* UI Layer — floating over globe */}
+      {/* UI Layer */}
       <div style={{ position: 'fixed', inset: 0, zIndex: 10, pointerEvents: 'none' }}>
         {/* Header */}
-        <header style={{ position: 'absolute', top: 32, left: 48, display: 'flex', alignItems: 'center', gap: 24, pointerEvents: 'auto' }}>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 300, letterSpacing: '0.35em', color: '#fff', textTransform: 'uppercase', margin: 0 }}>
-            TETHYS
-          </h1>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: isConnected ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', padding: '2px 10px', borderRadius: 9999 }}>
-            <div style={{ width: 6, height: 6, borderRadius: '50%', background: isConnected ? '#4ade80' : '#ef4444', boxShadow: `0 0 10px ${isConnected ? 'rgba(74,222,128,0.5)' : 'rgba(239,68,68,0.5)'}` }} />
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.1em', color: isConnected ? '#4ade80' : '#ef4444', textTransform: 'uppercase', fontWeight: 600 }}>
-              {isConnected ? 'LIVE' : 'OFFLINE'}
-            </span>
+        <header style={{ position: 'absolute', top: 32, left: 48, right: 48, display: 'flex', alignItems: 'center', justifyContent: 'space-between', pointerEvents: 'auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+            <h1 style={{ fontSize: '1.5rem', fontWeight: 300, letterSpacing: '0.35em', color: '#fff', textTransform: 'uppercase', margin: 0 }}>
+              TETHYS
+            </h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: isConnected ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', padding: '2px 10px', borderRadius: 9999 }}>
+              <div style={{ width: 6, height: 6, borderRadius: '50%', background: isConnected ? '#4ade80' : '#ef4444', boxShadow: `0 0 10px ${isConnected ? 'rgba(74,222,128,0.5)' : 'rgba(239,68,68,0.5)'}` }} />
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.1em', color: isConnected ? '#4ade80' : '#ef4444', textTransform: 'uppercase', fontWeight: 600 }}>
+                {isConnected ? 'LIVE' : 'OFFLINE'}
+              </span>
+            </div>
+            {/* Inline stats */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontFamily: 'var(--font-mono)', fontSize: 10 }}>
+              <span style={{ color: '#fbbf24', fontWeight: 700 }}>{anomalies.length}</span>
+              <span style={{ color: '#52525b', fontSize: 8 }}>ANOMALIES</span>
+              <span style={{ color: '#e4e4e7', fontWeight: 700 }}>{events.length}</span>
+              <span style={{ color: '#52525b', fontSize: 8 }}>EVENTS</span>
+              <span style={{ color: '#4ade80', fontWeight: 700 }}>{sourceCount}/{sourceCount}</span>
+              <span style={{ color: '#52525b', fontSize: 8 }}>SOURCES</span>
+            </div>
           </div>
         </header>
 
@@ -92,19 +105,15 @@ export default function App() {
           </div>
         </div>
 
-        {/* Left panel — grouped, collapsible */}
-        <aside style={{ position: 'absolute', left: 48, top: 112, bottom: 80, width: 320, display: 'flex', flexDirection: 'column', gap: 8, overflowY: 'auto', pointerEvents: 'auto' }}>
-          {/* Always visible */}
-          <ActivityCard />
-
-          {/* Solar Monitoring */}
-          <CollapsibleSection title="Solar Monitoring" defaultOpen={true} summary="Solar Wind · GOES">
+        {/* Left panel — charts + monitoring */}
+        <aside style={{ position: 'absolute', left: 48, top: 112, bottom: 80, width: 320, display: 'flex', flexDirection: 'column', gap: 12, overflowY: 'auto', pointerEvents: 'auto' }}>
+          <SeismicChart />
+          <SolarWindChart />
+          <CollapsibleSection title="Solar Monitoring" defaultOpen={false} summary="Solar Wind · GOES">
             <SolarWindCard />
             <GoesCard />
           </CollapsibleSection>
-
-          {/* Space Alerts */}
-          <CollapsibleSection title="Space Alerts" defaultOpen={true} summary="DONKI · CME · Flares">
+          <CollapsibleSection title="Space Alerts" defaultOpen={false} summary="DONKI · CME · Flares">
             <SpaceWeatherCard />
           </CollapsibleSection>
         </aside>
