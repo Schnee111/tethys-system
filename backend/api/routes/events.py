@@ -13,9 +13,9 @@ router = APIRouter()
 
 @router.get("/api/v1/events/seismic")
 async def get_seismic_events(
-    hours: int = Query(default=24, ge=1, le=168),
+    hours: int = Query(default=24, ge=1, le=8760),
     min_mag: float = Query(default=0.0, ge=0),
-    limit: int = Query(default=100, ge=1, le=1000),
+    limit: int = Query(default=100, ge=1, le=5000),
 ):
     """Query seismic events."""
     pool = await get_pool()
