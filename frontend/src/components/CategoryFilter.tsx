@@ -14,15 +14,9 @@ export function CategoryFilter({ activeCategories, onToggle }: CategoryFilterPro
 
   return (
     <nav style={{
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      zIndex: 40,
       display: 'flex',
       alignItems: 'center',
-      gap: 16,
-      paddingBottom: 12,
+      gap: 4,
       userSelect: 'none',
     }}>
       {categories.map((cat) => {
@@ -35,21 +29,21 @@ export function CategoryFilter({ activeCategories, onToggle }: CategoryFilterPro
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 8,
+              gap: 6,
               background: 'none',
               border: 'none',
+              borderBottom: `2px solid ${isActive ? cat.color : 'transparent'}`,
               cursor: 'pointer',
-              opacity: isActive ? 1 : 0.3,
-              transition: 'opacity 0.2s',
-              padding: 0,
+              padding: '6px 10px',
+              transition: 'all 0.15s',
             }}
           >
-            <Icon style={{ width: 14, height: 14, color: isActive ? cat.color : '#52525b' }} />
+            <Icon style={{ width: 12, height: 12, color: isActive ? cat.color : '#52525b' }} />
             <span style={{
               fontFamily: 'var(--font-mono)',
               fontSize: 9,
               letterSpacing: '0.1em',
-              color: isActive ? '#e4e4e7' : '#71717a',
+              color: isActive ? '#e4e4e7' : '#52525b',
               textTransform: 'uppercase',
               fontWeight: 600,
             }}>
