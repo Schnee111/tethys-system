@@ -45,13 +45,7 @@ export function SeismicChart() {
       <div style={{ height: 64 }}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
-            <XAxis
-              dataKey="hour"
-              tick={{ fontSize: 7, fill: '#3f3f46' }}
-              axisLine={false}
-              tickLine={false}
-              interval={5}
-            />
+            <XAxis dataKey="hour" hide />
             <YAxis hide domain={[0, maxCount * 1.2]} />
             <Tooltip
               contentStyle={{
