@@ -9,9 +9,9 @@ const GLOBE_HOURS = 2;
 const FLY_ALTITUDE = 0.3; // Very close zoom when focused
 const FLY_DURATION = 1200;
 const GLOBE_RADIUS = 100;
-const PULSE_COUNT = 3;
-const PULSE_SPEED = 0.003; // Slower — was 0.008
-const PULSE_MAX_SCALE = 2.0; // Smaller expansion — was 3.0
+const PULSE_COUNT = 1; // 1 pulse per event (was 3)
+const PULSE_SPEED = 0.004;
+const PULSE_MAX_SCALE = 2.5;
 
 let globeInstance: any = null;
 export function getGlobe() { return globeInstance; }
@@ -51,22 +51,21 @@ export function EarthGlobe() {
     globeInstance = globe;
     globe.scene().add(ringsGroupRef.current);
 
-    // Track altitude via controls change event
+    // Track altitude — throttled to 10x/sec
     const controls = globe.controls();
+    let lastUpdate = 0;
     const onControlsChange = () => {
+      const now = Date.now();
+      if (now - lastUpdate < 100) return; // max 10fps
+      lastUpdate = now;
       try {
         const pov = globe.pointOfView();
         const alt = pov?.altitude;
-        if (typeof alt === 'number') {
-          console.log('[GLOBE] altitude:', alt.toFixed(3));
-          setAltitude(alt);
-        }
-      } catch (e) {
-        console.error('[GLOBE] error:', e);
-      }
+        if (typeof alt === 'number') setAltitude(alt);
+      } catch {}
     };
     controls.addEventListener('change', onControlsChange);
-    onControlsChange(); // Initial
+    onControlsChange();
 
     // Animation loop for pulse rings
     const animate = () => {
