@@ -1,44 +1,50 @@
 import { useDataStore } from '../stores/dataStore';
 
 export function ActivityCard() {
-  const { activity, isLoading, anomalies } = useDataStore();
-  const level = activity?.activity_level || 'unknown';
-  const score = activity?.activity_score ?? 0;
-  const confidence = activity?.confidence ?? 0;
-  const isNoData = score === 0 && confidence < 0.1;
-  const anomalyCount = activity?.active_anomalies ?? anomalies.length;
+  const { events, anomalies, status } = useDataStore();
+  const sourceCount = status ? Object.keys(status.collectors).length : 0;
+  const activeSources = status ? Object.values(status.collectors).filter((c: any) => c.status === 'ok').length : 0;
+
+  const stats = [
+    { label: 'Anomalies', value: anomalies.length, color: anomalies.length > 0 ? '#fbbf24' : '#4ade80' },
+    { label: 'Events', value: events.length, color: '#e4e4e7' },
+    { label: 'Sources', value: `${activeSources}/${sourceCount}`, color: activeSources === sourceCount ? '#4ade80' : '#fbbf24' },
+  ];
 
   return (
     <div style={{
-      padding: '14px',
-      borderRadius: '16px',
+      padding: '12px 14px',
+      borderRadius: 12,
       background: 'rgba(255,255,255,0.06)',
       backdropFilter: 'blur(16px)',
-      textAlign: 'left',
-      fontSize: 10,
-      color: '#71717a',
-      flexShrink: 0,
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      gap: 12,
     }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-        <span style={{ fontSize: 9, letterSpacing: '0.1em', color: 'rgba(161,161,170,0.5)', textTransform: 'uppercase', fontWeight: 600 }}>
-          ACTIVITY INDEX
-        </span>
-        <span style={{ color: isNoData ? '#71717a' : 'rgba(52,211,153,0.8)', fontWeight: 700, fontFamily: 'var(--font-mono)', fontSize: 9 }}>
-          {isLoading ? '...' : isNoData ? 'NO DATA' : level.toUpperCase()}
-        </span>
-      </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: 9, marginBottom: 3 }}>
-        <span>SCORE</span>
-        <span style={{ color: isNoData ? '#71717a' : '#d4d4d8', fontWeight: 700 }}>{isNoData ? '—' : `${score.toFixed(2)} / 1.00`}</span>
-      </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: 9, marginBottom: 3 }}>
-        <span>CONFIDENCE</span>
-        <span style={{ color: isNoData ? '#71717a' : confidence < 0.2 ? '#fbbf24' : '#d4d4d8', fontWeight: 700 }}>{isNoData ? 'N/A' : confidence < 0.2 ? 'LOW' : `${(confidence * 100).toFixed(0)}%`}</span>
-      </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: 9 }}>
-        <span>ANOMALIES</span>
-        <span style={{ color: isNoData ? '#71717a' : '#d4d4d8', fontWeight: 700 }}>{anomalyCount}</span>
-      </div>
+      {stats.map((stat) => (
+        <div key={stat.label} style={{ textAlign: 'center', flex: 1 }}>
+          <div style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: 16,
+            fontWeight: 700,
+            color: stat.color,
+            lineHeight: 1,
+            marginBottom: 4,
+          }}>
+            {stat.value}
+          </div>
+          <div style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: 8,
+            color: '#71717a',
+            textTransform: 'uppercase',
+            letterSpacing: '0.1em',
+          }}>
+            {stat.label}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
