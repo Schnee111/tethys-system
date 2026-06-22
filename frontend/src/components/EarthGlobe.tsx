@@ -6,7 +6,7 @@ import { useGlobeStore } from '../stores/globeStore';
 import { DOMAIN_COLORS } from '../utils/colors';
 
 const GLOBE_HOURS = 2;
-const FLY_ALTITUDE = 0.5; // Close zoom when focused
+const FLY_ALTITUDE = 0.3; // Very close zoom when focused
 const FLY_DURATION = 1200;
 const GLOBE_RADIUS = 100;
 const PULSE_COUNT = 3;
@@ -22,7 +22,8 @@ interface PulseRing {
   baseRadius: number;
   scale: number;
   speed: number;
-  phase: number; // offset for staggered pulses
+  phase: number;
+  maxOpacity: number;
 }
 
 export function EarthGlobe() {
@@ -64,7 +65,7 @@ export function EarthGlobe() {
 
         // Fade out as it expands
         const mat = pulse.mesh.material as THREE.MeshBasicMaterial;
-        mat.opacity = 0.25 * (1 - progress);
+        mat.opacity = pulse.maxOpacity * (1 - progress);
       });
       animFrameRef.current = requestAnimationFrame(animate);
     };
@@ -92,12 +93,14 @@ export function EarthGlobe() {
         FLY_DURATION
       );
     } else {
+      // Zoom back to initial view + resume rotation
       setTimeout(() => {
         if (globeRef.current && !prevEventIdRef.current) {
+          globeRef.current.pointOfView({ altitude: 2.0 }, 800);
           globeRef.current.controls().autoRotate = true;
           globeRef.current.controls().autoRotateSpeed = 0.15;
         }
-      }, 500);
+      }, 300);
     }
   }, [selectedEvent]);
 
@@ -134,14 +137,17 @@ export function EarthGlobe() {
     // Create new pulse rings for each event
     filteredEvents.forEach((e) => {
       const mag = e.magnitude || 1;
-      // Fixed visual size per magnitude — small, proportional, not exaggerated
-      const baseRadius = 0.3 + mag * 0.15; // M1=0.45, M3=0.75, M5=1.05
+      const baseRadius = 0.3 + mag * 0.15;
       const radiusUnits = Math.min(baseRadius, 2.0);
-      const color = new THREE.Color(DOMAIN_COLORS[e.domain] || '#6b7280');
+      const isSelected = selectedEvent?.event_id === e.event_id && selectedEvent?.time === e.time;
+      const color = isSelected
+        ? new THREE.Color('#ffffff')
+        : new THREE.Color(DOMAIN_COLORS[e.domain] || '#6b7280');
       const coords = globe.getCoords(e.latitude, e.longitude, 0.001);
+      const pulseCount = isSelected ? 5 : PULSE_COUNT; // More pulses for selected
+      const maxOpacity = isSelected ? 0.4 : 0.25; // Brighter for selected
 
-      // Multiple staggered pulses per event
-      for (let i = 0; i < PULSE_COUNT; i++) {
+      for (let i = 0; i < pulseCount; i++) {
         const geo = new THREE.RingGeometry(radiusUnits * 0.85, radiusUnits, 48);
         const mat = new THREE.MeshBasicMaterial({
           color: color.clone(),
@@ -158,12 +164,13 @@ export function EarthGlobe() {
           mesh,
           baseRadius: radiusUnits,
           scale: 0,
-          speed: PULSE_SPEED,
-          phase: i / PULSE_COUNT, // Stagger: 0, 0.33, 0.67
+          speed: isSelected ? PULSE_SPEED * 1.3 : PULSE_SPEED, // Slightly faster for selected
+          phase: i / pulseCount,
+          maxOpacity,
         });
       }
     });
-  }, [filteredEvents]);
+  }, [filteredEvents, selectedEvent]);
 
   // Pillar lines
   const points = filteredEvents.map((e) => ({
