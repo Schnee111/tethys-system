@@ -24,8 +24,6 @@ export function FilterBar() {
       display: 'flex',
       flexDirection: 'column',
       gap: 10,
-      paddingBottom: 12,
-      borderBottom: '1px solid rgba(255,255,255,0.06)',
     }}>
       {/* Domain filter */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>

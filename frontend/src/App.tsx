@@ -96,11 +96,17 @@ export default function App() {
           <SensorsGrid />
         </aside>
 
-        {/* Right panel — filters + live feed */}
-        <aside style={{ position: 'absolute', right: 48, top: 112, bottom: 112, width: 320, display: 'flex', flexDirection: 'column', gap: 12, padding: 16, borderRadius: 16, ...GLASS, pointerEvents: 'auto' }}>
-          <FilterBar />
-          <LiveFeed />
-        </aside>
+        {/* Right side — filter card + live feed card, separate */}
+        <div style={{ position: 'absolute', right: 48, top: 112, bottom: 112, width: 320, display: 'flex', flexDirection: 'column', gap: 12, pointerEvents: 'auto' }}>
+          {/* Filter card */}
+          <div style={{ padding: '12px 14px', borderRadius: 12, ...GLASS }}>
+            <FilterBar />
+          </div>
+          {/* Live Feed card */}
+          <div style={{ flex: 1, minHeight: 0, padding: 16, borderRadius: 16, ...GLASS, display: 'flex', flexDirection: 'column' }}>
+            <LiveFeed />
+          </div>
+        </div>
 
         {/* Timeline — component positions itself */}
         <TimelineSlider />
