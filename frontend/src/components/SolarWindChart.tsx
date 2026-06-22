@@ -3,6 +3,53 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'rec
 import { useGlassStyle } from '../utils/glass';
 import { api } from '../api/client';
 
+function MiniChart({ data, dataKey, color, label, unit }: {
+  data: any[]; dataKey: string; color: string; label: string; unit: string;
+}) {
+  const values = data.map(d => d[dataKey]).filter(v => v != null);
+  const latest = values.length > 0 ? values[values.length - 1] : null;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</span>
+        {latest != null && (
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#e4e4e7', fontWeight: 700 }}>
+            {latest.toFixed(1)} <span style={{ fontSize: 7, color: '#52525b' }}>{unit}</span>
+          </span>
+        )}
+      </div>
+      <div style={{ height: 32 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={data} margin={{ top: 2, right: 2, bottom: 0, left: 0 }}>
+            <XAxis dataKey="time" hide />
+            <YAxis hide />
+            <Tooltip
+              contentStyle={{
+                background: 'rgba(0,0,0,0.85)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: 8,
+                fontSize: 10,
+                fontFamily: 'var(--font-mono)',
+                color: '#e4e4e7',
+              }}
+              labelStyle={{ color: '#71717a' }}
+              formatter={(value: any) => [Number(value).toFixed(1), label]}
+            />
+            <Line
+              type="monotone"
+              dataKey={dataKey}
+              stroke={color}
+              strokeWidth={1.5}
+              dot={false}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
 export function SolarWindChart() {
   const glass = useGlassStyle();
   const [data, setData] = useState<any[]>([]);
@@ -15,7 +62,6 @@ export function SolarWindChart() {
           speed: r.speed,
           density: r.density,
         }));
-        // Downsample if too many points (max ~50 for chart readability)
         if (points.length > 50) {
           const step = Math.ceil(points.length / 50);
           setData(points.filter((_: any, i: number) => i % step === 0));
@@ -27,68 +73,15 @@ export function SolarWindChart() {
   }, []);
 
   return (
-    <div style={{ padding: '14px', borderRadius: 16, ...glass, display: 'flex', flexDirection: 'column', gap: 8 }}>
+    <div style={{ padding: '14px', borderRadius: 16, ...glass, display: 'flex', flexDirection: 'column', gap: 10 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span style={{ fontSize: 9, letterSpacing: '0.1em', color: 'rgba(161,161,170,0.8)', textTransform: 'uppercase', fontWeight: 600 }}>
-          Solar Wind Trend
+          Solar Wind
         </span>
         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#52525b' }}>24h</span>
       </div>
-      <div style={{ height: 80 }}>
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
-            <XAxis
-              dataKey="time"
-              tick={{ fontSize: 7, fill: '#3f3f46' }}
-              axisLine={false}
-              tickLine={false}
-              interval={Math.max(0, Math.floor(data.length / 6))}
-            />
-            <YAxis hide />
-            <Tooltip
-              contentStyle={{
-                background: 'rgba(0,0,0,0.8)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: 8,
-                fontSize: 10,
-                fontFamily: 'var(--font-mono)',
-                color: '#e4e4e7',
-              }}
-              labelStyle={{ color: '#71717a' }}
-              formatter={(value: any, name: any) => {
-                if (value == null) return ['—', name];
-                return [Number(value).toFixed(1), name];
-              }}
-            />
-            <Line
-              type="monotone"
-              dataKey="speed"
-              stroke="#fbbf24"
-              strokeWidth={1.5}
-              dot={false}
-              name="Speed (km/s)"
-            />
-            <Line
-              type="monotone"
-              dataKey="density"
-              stroke="#60a5fa"
-              strokeWidth={1.5}
-              dot={false}
-              name="Density (p/cm³)"
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-      <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'var(--font-mono)', fontSize: 8, color: '#71717a' }}>
-          <span style={{ width: 12, height: 2, background: '#fbbf24', borderRadius: 1, display: 'inline-block' }} />
-          Speed
-        </span>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'var(--font-mono)', fontSize: 8, color: '#71717a' }}>
-          <span style={{ width: 12, height: 2, background: '#60a5fa', borderRadius: 1, display: 'inline-block' }} />
-          Density
-        </span>
-      </div>
+      <MiniChart data={data} dataKey="speed" color="#fbbf24" label="Speed" unit="km/s" />
+      <MiniChart data={data} dataKey="density" color="#60a5fa" label="Density" unit="p/cm³" />
     </div>
   );
 }
