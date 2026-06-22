@@ -94,8 +94,10 @@ export function LiveFeed() {
   // Apply filters
   const filteredEvents = useMemo(() => allEvents.filter(e => {
     if (!activeCategories.has(e.domain)) return false;
-    const mag = e.magnitude || 0;
-    if (mag < minMagnitude || mag > maxMagnitude) return false;
+    // Magnitude filter only for events that have magnitude
+    if (e.magnitude != null) {
+      if (e.magnitude < minMagnitude || e.magnitude > maxMagnitude) return false;
+    }
     return true;
   }), [allEvents, activeCategories, minMagnitude, maxMagnitude]);
 

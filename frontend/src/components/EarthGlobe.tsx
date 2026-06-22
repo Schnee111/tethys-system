@@ -128,8 +128,11 @@ export function EarthGlobe() {
   const filteredEvents = useMemo(() => {
     const base = events.filter(e => {
       if (!activeCategories.has(e.domain)) return false;
-      if ((e.magnitude || 0) < minMagnitude) return false;
-      if ((e.magnitude || 0) > maxMagnitude) return false;
+      // Magnitude filter only applies to events that have magnitude (seismic)
+      if (e.magnitude != null) {
+        if (e.magnitude < minMagnitude) return false;
+        if (e.magnitude > maxMagnitude) return false;
+      }
       return new Date(e.time).getTime() >= cutoffTime;
     });
 
