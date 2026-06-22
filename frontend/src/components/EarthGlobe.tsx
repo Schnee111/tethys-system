@@ -260,15 +260,12 @@ export function EarthGlobe() {
           opacity: d.opacity ?? 0.95,
         });
 
-        // Volcanic: cone (mountain shape, base on surface, tip up)
+        // Volcanic: flat diamond (distinct from seismic sphere)
         if (d.domain === 'volcanic') {
-          const cone = new THREE.Mesh(
-            new THREE.ConeGeometry(d.size, d.size * 2, 8),
+          return new THREE.Mesh(
+            new THREE.OctahedronGeometry(d.size, 0),
             mat,
           );
-          // Offset so base sits on surface, not center
-          cone.position.y = d.size;
-          return cone;
         }
 
         // Default (seismic, etc.): sphere
