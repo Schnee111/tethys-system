@@ -55,7 +55,7 @@ export function GoesChart() {
       </div>
       <div style={{ height: 64 }}>
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={rawData} margin={{ top: 4, right: 4, bottom: 2, left: 0 }}>
+          <LineChart data={rawData} margin={{ top: 2, right: 4, bottom: 0, left: 0 }}>
             <XAxis
               dataKey="time"
               tick={{ fontSize: 7, fill: '#3f3f46' }}
