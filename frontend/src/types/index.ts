@@ -20,6 +20,10 @@ export interface PlanetaryEvent {
   alert?: string;       // USGS alert level: green/yellow/orange/red
   tsunami?: number;     // 1 = tsunami warning issued
   eventType?: string;   // earthquake, etc.
+  // Volcanic-specific (optional)
+  elevation_m?: number;
+  vei?: number;          // Volcanic Explosivity Index
+  link?: string;         // Source link
 }
 
 export interface Anomaly {

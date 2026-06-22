@@ -79,6 +79,9 @@ function transformVolcanic(v: any): PlanetaryEvent {
     longitude: v.longitude,
     description: v.description || v.volcano_name || '',
     severity: 'medium' as const,
+    elevation_m: v.elevation_m,
+    vei: v.vei,
+    link: v.link,
   };
 }
 

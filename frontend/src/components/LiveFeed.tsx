@@ -66,6 +66,9 @@ export function LiveFeed() {
             longitude: v.longitude,
             description: v.description || '',
             severity: 'medium' as const,
+            elevation_m: v.elevation_m,
+            vei: v.vei,
+            link: v.link,
           }));
 
         setRestEvents([...seismic, ...volcanic]);
@@ -173,6 +176,31 @@ export function LiveFeed() {
                 {selectedEvent.tsunami === 1 && (
                   <div style={{ display: 'flex', justifyContent: 'space-between', gridColumn: '1 / -1' }}>
                     <span style={{ color: '#ef4444', fontWeight: 700 }}>TSUNAMI WARNING</span>
+                  </div>
+                )}
+                {/* Volcanic-specific */}
+                {selectedEvent.elevation_m != null && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#52525b' }}>Elevation</span>
+                    <span style={{ color: '#a1a1aa' }}>{selectedEvent.elevation_m.toFixed(0)} m</span>
+                  </div>
+                )}
+                {selectedEvent.vei != null && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#52525b' }}>VEI</span>
+                    <span style={{ color: '#a1a1aa' }}>{selectedEvent.vei}</span>
+                  </div>
+                )}
+                {selectedEvent.link && (
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <a
+                      href={selectedEvent.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#60a5fa', textDecoration: 'none' }}
+                    >
+                      View on GVP
+                    </a>
                   </div>
                 )}
               </div>
