@@ -131,7 +131,7 @@ export function EarthGlobe() {
     );
     group.add(sphere);
 
-    // Impact ring — flat on globe surface
+    // Impact ring — flat on globe surface (XY plane = perpendicular to Y = away from globe)
     const ring = new THREE.Mesh(
       new THREE.RingGeometry(d.ringRadius * 0.7, d.ringRadius, 48),
       new THREE.MeshBasicMaterial({
@@ -141,9 +141,6 @@ export function EarthGlobe() {
         side: THREE.DoubleSide,
       })
     );
-    // Ring sits at sphere position, flat
-    ring.position.y = -d.alt;
-    ring.rotation.x = -Math.PI / 2;
     group.add(ring);
 
     return group;
