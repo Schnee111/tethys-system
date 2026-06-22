@@ -276,7 +276,7 @@ export function LiveFeed() {
                 onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
                 onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.background = 'transparent'; }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2, fontFamily: 'var(--font-mono)', fontSize: 11 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2, fontFamily: 'var(--font-mono)', fontSize: 10 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span style={{ color: '#71717a' }}>[{formatTime(event.time)}]</span>
                     <span style={{ fontWeight: 700, letterSpacing: '0.1em', fontSize: 9, textTransform: 'uppercase', color: DOMAIN_COLORS[event.domain] || '#a1a1aa' }}>
@@ -289,7 +289,7 @@ export function LiveFeed() {
                     </span>
                   )}
                 </div>
-                <p style={{ color: '#d4d4d8', fontSize: 13, fontWeight: 300, lineHeight: 1.25, margin: 0 }}>
+                <p style={{ color: '#d4d4d8', fontSize: 11, fontWeight: 300, lineHeight: 1.25, margin: 0 }}>
                   {event.title}
                 </p>
               </div>
