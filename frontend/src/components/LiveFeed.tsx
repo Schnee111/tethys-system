@@ -129,10 +129,50 @@ export function LiveFeed() {
               <h4 style={{ fontSize: 11, fontWeight: 600, color: '#e4e4e7', margin: 0 }}>
                 {selectedEvent.title}
               </h4>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#52525b', display: 'flex', gap: 12 }}>
-                <span>{formatTime(selectedEvent.time)}</span>
-                <span>{selectedEvent.latitude?.toFixed(1)}°, {selectedEvent.longitude?.toFixed(1)}°</span>
-                {selectedEvent.depth_km && <span>{selectedEvent.depth_km.toFixed(1)}km</span>}
+              {/* Metadata grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 16px', fontFamily: 'var(--font-mono)', fontSize: 9 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#52525b' }}>Time</span>
+                  <span style={{ color: '#a1a1aa' }}>{formatTime(selectedEvent.time)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#52525b' }}>Coords</span>
+                  <span style={{ color: '#a1a1aa' }}>{selectedEvent.latitude?.toFixed(2)}, {selectedEvent.longitude?.toFixed(2)}</span>
+                </div>
+                {selectedEvent.depth_km != null && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#52525b' }}>Depth</span>
+                    <span style={{ color: '#a1a1aa' }}>{selectedEvent.depth_km.toFixed(1)} km</span>
+                  </div>
+                )}
+                {selectedEvent.sig != null && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#52525b' }}>Sig</span>
+                    <span style={{ color: '#a1a1aa' }}>{selectedEvent.sig}</span>
+                  </div>
+                )}
+                {selectedEvent.felt != null && selectedEvent.felt > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#52525b' }}>Felt</span>
+                    <span style={{ color: '#a1a1aa' }}>{selectedEvent.felt} reports</span>
+                  </div>
+                )}
+                {selectedEvent.alert && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#52525b' }}>Alert</span>
+                    <span style={{
+                      color: selectedEvent.alert === 'red' ? '#ef4444' : selectedEvent.alert === 'orange' ? '#f59e0b' : selectedEvent.alert === 'yellow' ? '#eab308' : '#4ade80',
+                      fontWeight: 700,
+                    }}>
+                      {selectedEvent.alert.toUpperCase()}
+                    </span>
+                  </div>
+                )}
+                {selectedEvent.tsunami === 1 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gridColumn: '1 / -1' }}>
+                    <span style={{ color: '#ef4444', fontWeight: 700 }}>TSUNAMI WARNING</span>
+                  </div>
+                )}
               </div>
             </div>
           </motion.div>

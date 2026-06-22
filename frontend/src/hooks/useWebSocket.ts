@@ -31,6 +31,11 @@ function transformSeismic(e: any): PlanetaryEvent {
     depth_km: e.depth_km,
     description: `Depth: ${e.depth_km?.toFixed(1) || '?'}km · Sig: ${e.sig || '-'}`,
     severity: toSeverity(e.magnitude || 0),
+    sig: e.sig,
+    felt: e.felt,
+    alert: e.alert,
+    tsunami: e.tsunami,
+    eventType: e.type,
   };
 }
 

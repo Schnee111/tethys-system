@@ -14,6 +14,12 @@ export interface PlanetaryEvent {
   depth_km?: number;
   description: string;
   severity: Severity;
+  // Seismic-specific (optional)
+  sig?: number;        // USGS significance score
+  felt?: number;        // Number of "felt" reports
+  alert?: string;       // USGS alert level: green/yellow/orange/red
+  tsunami?: number;     // 1 = tsunami warning issued
+  eventType?: string;   // earthquake, etc.
 }
 
 export interface Anomaly {
