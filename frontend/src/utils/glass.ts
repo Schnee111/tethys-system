@@ -16,8 +16,8 @@ export function useGlassStyle() {
 
     return {
       background: `linear-gradient(rgba(0,0,0,${blackOpacity.toFixed(3)}), rgba(0,0,0,${blackOpacity.toFixed(3)})), linear-gradient(rgba(255,255,255,${whiteOpacity.toFixed(3)}), rgba(255,255,255,${whiteOpacity.toFixed(3)}))`,
-      backdropFilter: 'blur(12px)',
-      WebkitBackdropFilter: 'blur(12px)',
+      backdropFilter: 'blur(8px)',
+      WebkitBackdropFilter: 'blur(8px)',
     };
   }, [altitude]);
 }
