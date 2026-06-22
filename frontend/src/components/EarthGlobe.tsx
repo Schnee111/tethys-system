@@ -1,15 +1,17 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useMemo } from 'react';
 import * as THREE from 'three';
 import Globe from 'react-globe.gl';
 import { useDataStore } from '../stores/dataStore';
 import { useGlobeStore } from '../stores/globeStore';
 import { DOMAIN_COLORS } from '../utils/colors';
 
+// How many hours back the globe shows by default
+const GLOBE_HOURS = 2;
+
 export function EarthGlobe() {
   const globeRef = useRef<any>(null);
   const { events } = useDataStore();
-  const { activeCategories } = useGlobeStore();
-  const filteredEvents = events.filter(e => activeCategories.has(e.domain));
+  const { activeCategories, minMagnitude, timelinePercent } = useGlobeStore();
   const [size, setSize] = useState({ w: window.innerWidth, h: window.innerHeight });
 
   useEffect(() => {
@@ -24,6 +26,27 @@ export function EarthGlobe() {
     globe.controls().autoRotate = true;
     globe.controls().autoRotateSpeed = 0.2;
   }, []);
+
+  // Calculate time window based on timeline slider
+  const timeWindowHours = useMemo(() => {
+    if (timelinePercent >= 99) return GLOBE_HOURS; // LIVE = last 2h
+    return Math.max(0.5, (timelinePercent / 100) * 12); // 0-12h range
+  }, [timelinePercent]);
+
+  const cutoffTime = useMemo(() => {
+    return Date.now() - timeWindowHours * 60 * 60 * 1000;
+  }, [timeWindowHours]);
+
+  // Filter: domain + time + magnitude
+  const filteredEvents = useMemo(() => {
+    return events.filter(e => {
+      if (!activeCategories.has(e.domain)) return false;
+      if ((e.magnitude || 0) < minMagnitude) return false;
+      const eventTime = new Date(e.time).getTime();
+      if (eventTime < cutoffTime) return false;
+      return true;
+    });
+  }, [events, activeCategories, minMagnitude, cutoffTime]);
 
   // Pillar lines — color by DOMAIN, height by magnitude
   const points = filteredEvents.map((e) => ({

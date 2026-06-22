@@ -11,6 +11,7 @@ import { ActivityCard } from './components/ActivityCard';
 import { SensorsGrid } from './components/SensorsGrid';
 import { CategoryFilter } from './components/CategoryFilter';
 import { TimelineSlider } from './components/TimelineSlider';
+import { MagnitudeFilter } from './components/MagnitudeFilter';
 
 // Shared glassmorphism style
 const GLASS = {
@@ -103,6 +104,11 @@ export default function App() {
           <CategoryFilter activeCategories={activeCategories} onToggle={toggleCategory} />
           <LiveFeed />
         </aside>
+
+        {/* Magnitude filter — bottom left */}
+        <div style={{ pointerEvents: 'auto' }}>
+          <MagnitudeFilter />
+        </div>
 
         {/* Timeline — bottom center */}
         <div style={{ pointerEvents: 'auto' }}>
