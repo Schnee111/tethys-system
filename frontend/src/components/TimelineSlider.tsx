@@ -67,6 +67,7 @@ export function TimelineSlider() {
       WebkitBackdropFilter: 'blur(40px)',
       borderRadius: 9999,
       padding: '12px 24px',
+      pointerEvents: 'auto',
       boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
       width: 460,
       maxWidth: '100%',
