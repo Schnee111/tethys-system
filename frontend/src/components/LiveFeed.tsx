@@ -1,9 +1,18 @@
+import { useState, useEffect, useMemo } from 'react';
 import { useDataStore } from '../stores/dataStore';
 import { useGlobeStore } from '../stores/globeStore';
 import { motion, AnimatePresence } from 'motion/react';
 import { X } from 'lucide-react';
 import { magnitudeColor, DOMAIN_COLORS } from '../utils/colors';
-import { getGlobe } from './EarthGlobe';
+import { api } from '../api/client';
+import type { PlanetaryEvent } from '../types';
+
+const TIME_RANGES = [
+  { label: '24h', hours: 24 },
+  { label: '7d', hours: 168 },
+  { label: '30d', hours: 720 },
+  { label: 'All', hours: 8760 },
+];
 
 function formatTime(time: string): string {
   try { return new Date(time).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }); }
@@ -11,15 +20,84 @@ function formatTime(time: string): string {
 }
 
 export function LiveFeed() {
-  const { events, isLoading } = useDataStore();
+  const { events: wsEvents, isLoading } = useDataStore();
   const { activeCategories, minMagnitude, maxMagnitude } = useGlobeStore();
-  const filteredEvents = events.filter(e => {
+  const { selectedEvent, setSelectedEvent } = useGlobeStore();
+
+  const [timeRange, setTimeRange] = useState(0); // index into TIME_RANGES
+  const [restEvents, setRestEvents] = useState<PlanetaryEvent[]>([]);
+
+  const range = TIME_RANGES[timeRange];
+
+  // Fetch historical data when range > 24h
+  useEffect(() => {
+    if (range.hours <= 24) {
+      setRestEvents([]);
+      return;
+    }
+
+    const fetchHistory = async () => {
+      try {
+        const [seismicRes, volcanicRes] = await Promise.all([
+          api.getSeismic({ hours: range.hours, limit: 1000 }),
+          api.getVolcanic(),
+        ]);
+
+        const seismic = (seismicRes.events || []).map((e: any) => ({
+          ...e,
+          domain: 'seismic' as const,
+          title: `M${e.magnitude?.toFixed(1) || '?'} — ${e.place || 'Unknown'}`,
+          location: e.place || 'Unknown',
+          severity: (e.magnitude || 0) >= 5 ? 'high' as const : (e.magnitude || 0) >= 3 ? 'medium' as const : 'low' as const,
+        }));
+
+        const volcanic = (volcanicRes.events || [])
+          .filter((v: any) => {
+            const age = Date.now() - new Date(v.time).getTime();
+            return age < range.hours * 3600000;
+          })
+          .map((v: any) => ({
+            time: v.time,
+            event_id: v.event_id,
+            domain: 'volcanic' as const,
+            title: v.volcano_name || 'Volcanic Event',
+            location: v.volcano_name || 'Unknown',
+            latitude: v.latitude,
+            longitude: v.longitude,
+            description: v.description || '',
+            severity: 'medium' as const,
+          }));
+
+        setRestEvents([...seismic, ...volcanic]);
+      } catch (err) {
+        console.error('Failed to fetch history:', err);
+      }
+    };
+
+    fetchHistory();
+  }, [range.hours]);
+
+  // Merge: WS events (recent) + REST events (historical), dedup by event_id
+  const allEvents = useMemo(() => {
+    if (range.hours <= 24) return wsEvents;
+
+    const merged = new Map<string, PlanetaryEvent>();
+    for (const e of wsEvents) merged.set(e.event_id, e);
+    for (const e of restEvents) {
+      if (!merged.has(e.event_id)) merged.set(e.event_id, e);
+    }
+    return Array.from(merged.values()).sort((a, b) =>
+      new Date(b.time).getTime() - new Date(a.time).getTime()
+    );
+  }, [wsEvents, restEvents, range.hours]);
+
+  // Apply filters
+  const filteredEvents = useMemo(() => allEvents.filter(e => {
     if (!activeCategories.has(e.domain)) return false;
     const mag = e.magnitude || 0;
     if (mag < minMagnitude || mag > maxMagnitude) return false;
     return true;
-  });
-  const { selectedEvent, setSelectedEvent } = useGlobeStore();
+  }), [allEvents, activeCategories, minMagnitude, maxMagnitude]);
 
   return (
     <>
@@ -61,13 +139,38 @@ export function LiveFeed() {
         )}
       </AnimatePresence>
 
-      {/* Header */}
+      {/* Header with time range selector */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 8 }}>
         <span style={{ fontSize: 10, letterSpacing: '0.25em', color: 'rgba(161,161,170,0.6)', textTransform: 'uppercase', fontWeight: 600 }}>
           LIVE FEED
         </span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#71717a', fontWeight: 500 }}>{filteredEvents.length} events · Last 24h</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#71717a' }}>
+            {filteredEvents.length} events
+          </span>
+          {/* Time range tabs */}
+          <div style={{ display: 'flex', gap: 2 }}>
+            {TIME_RANGES.map((r, i) => (
+              <button
+                key={r.label}
+                onClick={() => setTimeRange(i)}
+                style={{
+                  background: timeRange === i ? 'rgba(255,255,255,0.1)' : 'transparent',
+                  border: 'none',
+                  borderRadius: 4,
+                  padding: '2px 6px',
+                  cursor: 'pointer',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 8,
+                  color: timeRange === i ? '#e4e4e7' : '#3f3f46',
+                  fontWeight: timeRange === i ? 700 : 400,
+                  transition: 'all 0.15s',
+                }}
+              >
+                {r.label}
+              </button>
+            ))}
+          </div>
           <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#ef4444', animation: 'pulse 2s infinite', boxShadow: '0 0 8px rgba(239,68,68,0.5)' }} />
         </div>
       </div>
@@ -85,7 +188,7 @@ export function LiveFeed() {
             No signals
           </div>
         ) : (
-          filteredEvents.slice(0, 50).map((event) => {
+          filteredEvents.slice(0, 100).map((event) => {
             const isSelected = selectedEvent?.event_id === event.event_id && selectedEvent?.time === event.time;
             return (
               <div
@@ -110,7 +213,7 @@ export function LiveFeed() {
                       {event.domain}
                     </span>
                   </div>
-                  {event.magnitude && (
+                  {event.magnitude != null && (
                     <span style={{ fontSize: 9, color: magnitudeColor(event.magnitude), fontFamily: 'var(--font-mono)' }}>
                       M{event.magnitude.toFixed(1)}
                     </span>
