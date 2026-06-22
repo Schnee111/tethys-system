@@ -99,15 +99,7 @@ export function LiveFeed() {
                   textAlign: 'left',
                   marginBottom: 4,
                 }}
-                onClick={() => {
-                  setSelectedEvent(event);
-                  // Fly globe to event location
-                  const globe = getGlobe();
-                  if (globe) {
-                    globe.controls().autoRotate = false;
-                    globe.pointOfView({ lat: event.latitude, lng: event.longitude, altitude: 1.5 }, 1000);
-                  }
-                }}
+                onClick={() => setSelectedEvent(event)}
                 onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
                 onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.background = 'transparent'; }}
               >
