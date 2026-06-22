@@ -23,7 +23,7 @@ export const useGlobeStore = create<GlobeState>((set) => ({
   selectedEvent: null,
   isLive: true,
   timelinePercent: 100,
-  activeCategories: new Set(['seismic', 'solar', 'atmospheric']),
+  activeCategories: new Set(['seismic', 'volcanic']),
   minMagnitude: 0,
   maxMagnitude: 8,
   altitude: 2.0,

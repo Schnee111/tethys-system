@@ -156,6 +156,11 @@ async def _get_recent_events(pool, hours: int = 24) -> dict:
             "WHERE time > NOW() - $1::interval "
             "ORDER BY time DESC LIMIT 100"
         ),
+        "volcanic": (
+            "SELECT * FROM volcanic_events "
+            "WHERE time > NOW() - $1::interval "
+            "ORDER BY time DESC LIMIT 100"
+        ),
     }
 
     async with pool.acquire() as conn:

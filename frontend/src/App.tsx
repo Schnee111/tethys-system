@@ -104,16 +104,11 @@ export default function App() {
           <CollapsibleSection title="Space Alerts" defaultOpen={true} summary="DONKI · CME · Flares">
             <SpaceWeatherCard />
           </CollapsibleSection>
-
-          {/* Earth Activity */}
-          <CollapsibleSection title="Earth Activity" defaultOpen={false} summary="Volcanic · Atmospheric">
-            <VolcanicCard />
-            <AtmosphericCard />
-          </CollapsibleSection>
         </aside>
 
-        {/* Right side — filter + live feed */}
+        {/* Right side — atmosphere + filter + live feed */}
         <div style={{ position: 'absolute', right: 48, top: 112, bottom: 112, width: 320, display: 'flex', flexDirection: 'column', gap: 12, pointerEvents: 'auto' }}>
+          <AtmosphericCard />
           <div style={{ padding: '12px 14px', borderRadius: 12, ...GLASS }}>
             <FilterBar />
           </div>

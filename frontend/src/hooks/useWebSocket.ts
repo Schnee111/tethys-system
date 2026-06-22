@@ -63,6 +63,20 @@ function transformGoes(g: any): PlanetaryEvent {
   };
 }
 
+function transformVolcanic(v: any): PlanetaryEvent {
+  return {
+    time: v.time,
+    event_id: v.event_id,
+    domain: 'volcanic',
+    title: v.volcano_name || 'Volcanic Event',
+    location: v.volcano_name || 'Unknown',
+    latitude: v.latitude,
+    longitude: v.longitude,
+    description: v.description || v.volcano_name || '',
+    severity: 'medium' as const,
+  };
+}
+
 function transformSpaceWeather(s: any): Anomaly {
   return {
     time: s.time,
@@ -155,6 +169,9 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
             if (data.goes) {
               allEvents.push(...data.goes.map(transformGoes));
             }
+            if (data.volcanic) {
+              allEvents.push(...data.volcanic.map(transformVolcanic));
+            }
 
             setEvents(allEvents);
             // Don't set anomalies from sync — REST API handles that with proper z-scores
@@ -178,6 +195,12 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
           case 'goes': {
             const records = msg.data || [];
             addEvents(records.map(transformGoes));
+            break;
+          }
+
+          case 'volcanic': {
+            const records = msg.data || [];
+            addEvents(records.map(transformVolcanic));
             break;
           }
 

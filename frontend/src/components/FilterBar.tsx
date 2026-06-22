@@ -1,11 +1,10 @@
 import { useRef, useCallback, useState } from 'react';
-import { Activity, Zap, Wind, SlidersHorizontal } from 'lucide-react';
+import { Activity, Flame, SlidersHorizontal } from 'lucide-react';
 import { useGlobeStore } from '../stores/globeStore';
 
 const DOMAINS = [
   { key: 'seismic', label: 'Seismic', icon: Activity, color: '#f87171' },
-  { key: 'solar', label: 'Solar', icon: Zap, color: '#fbbf24' },
-  { key: 'atmospheric', label: 'Atmospheric', icon: Wind, color: '#60a5fa' },
+  { key: 'volcanic', label: 'Volcanic', icon: Flame, color: '#fb923c' },
 ];
 
 const MAG_MIN = 0;
