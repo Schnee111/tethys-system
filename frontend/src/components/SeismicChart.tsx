@@ -63,6 +63,7 @@ export function SeismicChart() {
                 color: '#e4e4e7',
               }}
               labelStyle={{ color: '#71717a' }}
+              formatter={(value: any) => [`${value} events`, '']}
             />
             <Line
               type="monotone"

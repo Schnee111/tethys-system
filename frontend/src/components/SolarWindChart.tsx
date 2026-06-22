@@ -55,6 +55,10 @@ export function SolarWindChart() {
                 color: '#e4e4e7',
               }}
               labelStyle={{ color: '#71717a' }}
+              formatter={(value: any, name: any) => {
+                if (value == null) return ['—', name];
+                return [Number(value).toFixed(1), name];
+              }}
             />
             <Line
               type="monotone"
