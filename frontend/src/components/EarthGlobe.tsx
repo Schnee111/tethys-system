@@ -81,11 +81,18 @@ export function EarthGlobe() {
   // Poll altitude for dynamic glass opacity
   useEffect(() => {
     let raf: number;
+    let lastAlt = -1;
     const poll = () => {
       const globe = globeRef.current;
       if (globe) {
-        const alt = globe.pointOfView().altitude;
-        if (typeof alt === 'number') setAltitude(alt);
+        try {
+          const pov = globe.pointOfView();
+          const alt = pov?.altitude;
+          if (typeof alt === 'number' && alt !== lastAlt) {
+            lastAlt = alt;
+            setAltitude(alt);
+          }
+        } catch {}
       }
       raf = requestAnimationFrame(poll);
     };
