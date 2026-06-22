@@ -3,16 +3,18 @@ import { useGlobeStore } from '../stores/globeStore';
 
 /**
  * Dynamic glass background based on zoom level.
- * Zoomed out (space/dark) → lighter glass
- * Zoomed in (terrain/bright) → darker glass
+ * Zoomed out (space/dark bg) → white glass (visible over dark)
+ * Zoomed in (terrain/bright bg) → black glass (readable over bright)
  */
 export function useGlassStyle() {
   const altitude = useGlobeStore(s => s.altitude);
 
   return useMemo(() => {
-    const opacity = altitude < 0.5 ? 0.50 : 0.06;
+    const isZoomedIn = altitude < 0.5;
     return {
-      background: `rgba(0,0,0,${opacity})`,
+      background: isZoomedIn
+        ? 'rgba(0,0,0,0.50)'   // Dark glass over bright terrain
+        : 'rgba(255,255,255,0.06)', // White glass over dark space
       backdropFilter: 'blur(20px)',
       WebkitBackdropFilter: 'blur(20px)',
     };
