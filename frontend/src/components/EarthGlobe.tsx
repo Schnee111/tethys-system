@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import Globe from 'react-globe.gl';
 import { useDataStore } from '../stores/dataStore';
 import { useGlobeStore } from '../stores/globeStore';
-import { magnitudeColor } from '../utils/colors';
+import { DOMAIN_COLORS } from '../utils/colors';
 
 export function EarthGlobe() {
   const globeRef = useRef<any>(null);
@@ -25,24 +25,24 @@ export function EarthGlobe() {
     globe.controls().autoRotateSpeed = 0.2;
   }, []);
 
-  // Thin pillar lines (native globe.gl points)
+  // Pillar lines — color by DOMAIN, height by magnitude
   const points = filteredEvents.map((e) => ({
     lat: e.latitude,
     lng: e.longitude,
-    altitude: 0.01 + (e.magnitude || 2) * 0.005,
+    altitude: 0.01 + (e.magnitude || 1) * 0.004,
     size: 0.03,
-    color: magnitudeColor(e.magnitude || 0.5),
+    color: DOMAIN_COLORS[e.domain] || '#6b7280',
   }));
 
-  // Glowing spheres on top of pillars
+  // Spheres on top — color by DOMAIN, size by magnitude
   const sphereAlt = filteredEvents.map((e) => ({
     lat: e.latitude,
     lng: e.longitude,
-    alt: 0.01 + (e.magnitude || 2) * 0.005,
-    size: Math.max(0.2, (e.magnitude || 2) * 0.06),
-    color: magnitudeColor(e.magnitude || 0.5),
+    alt: 0.01 + (e.magnitude || 1) * 0.004,
+    size: Math.max(0.15, (e.magnitude || 1) * 0.05),
+    color: DOMAIN_COLORS[e.domain] || '#6b7280',
     event: e,
-    label: `M${e.magnitude?.toFixed(1)} — ${e.location}\nDepth: ${e.depth_km?.toFixed(1) || '?'}km`,
+    label: `${e.domain.toUpperCase()} — M${e.magnitude?.toFixed(1) || '?'}\n${e.location}\nDepth: ${e.depth_km?.toFixed(1) || '?'}km`,
   }));
 
   return (
@@ -56,7 +56,7 @@ export function EarthGlobe() {
       showAtmosphere={true}
       atmosphereColor="#38bdf8"
       atmosphereAltitude={0.2}
-      // Thin pillar lines (native pointsData — keeps original look)
+      // Pillar lines
       pointsData={points}
       pointLat="lat"
       pointLng="lng"
@@ -65,7 +65,7 @@ export function EarthGlobe() {
       pointRadius="size"
       pointResolution={6}
       pointsMerge={false}
-      // Glowing spheres on top (objectsData layer)
+      // Spheres on top
       objectsData={sphereAlt}
       objectLat="lat"
       objectLng="lng"
