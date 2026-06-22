@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { useGlassStyle } from '../utils/glass';
 import { api } from '../api/client';
@@ -6,8 +6,17 @@ import { api } from '../api/client';
 function MiniChart({ data, dataKey, color, label, unit }: {
   data: any[]; dataKey: string; color: string; label: string; unit: string;
 }) {
-  const values = data.map(d => d[dataKey]).filter(v => v != null);
+  const values = useMemo(() => data.map(d => d[dataKey]).filter(v => v != null), [data, dataKey]);
   const latest = values.length > 0 ? values[values.length - 1] : null;
+
+  // Y-axis: data range with 10% padding (not from 0)
+  const [yMin, yMax] = useMemo(() => {
+    if (values.length === 0) return [0, 1];
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const padding = (max - min) * 0.15 || 1;
+    return [min - padding, max + padding];
+  }, [values]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -23,7 +32,7 @@ function MiniChart({ data, dataKey, color, label, unit }: {
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 2, right: 2, bottom: 0, left: 0 }}>
             <XAxis dataKey="time" hide />
-            <YAxis hide />
+            <YAxis hide domain={[yMin, yMax]} />
             <Tooltip
               contentStyle={{
                 background: 'rgba(0,0,0,0.85)',
