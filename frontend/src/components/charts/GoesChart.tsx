@@ -16,24 +16,23 @@ export function GoesChart() {
   const [rawData, setRawData] = useState<any[]>([]);
 
   useEffect(() => {
-    api.getGoesXray({ hours: 24 }).then((res) => {
-      if (res?.readings?.length > 0) {
-        const filtered = res.readings
-          .filter((r: any) => r.energy_band === '0.1-0.8nm')
-          .map((r: any) => ({
-            time: new Date(r.time).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
-            flux: r.flux,
-          }))
-          .reverse();
-
-        if (filtered.length > 50) {
-          const step = Math.ceil(filtered.length / 50);
-          setRawData(filtered.filter((_: any, i: number) => i % step === 0));
-        } else {
-          setRawData(filtered);
+    const fetch = () => {
+      api.getGoesXray({ hours: 24 }).then((res) => {
+        if (res?.readings?.length > 0) {
+          const filtered = res.readings
+            .filter((r: any) => r.energy_band === '0.1-0.8nm')
+            .map((r: any) => ({
+              time: new Date(r.time).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
+              flux: r.flux,
+            }))
+            .reverse();
+          setRawData(filtered.length > 50 ? filtered.filter((_: any, i: number) => i % Math.ceil(filtered.length / 50) === 0) : filtered);
         }
-      }
-    }).catch(() => {});
+      }).catch(() => {});
+    };
+    fetch();
+    const interval = setInterval(fetch, 60000);
+    return () => clearInterval(interval);
   }, []);
 
   const currentFlux = rawData.length > 0 ? rawData[rawData.length - 1].flux : 0;

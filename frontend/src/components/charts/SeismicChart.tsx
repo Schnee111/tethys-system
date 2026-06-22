@@ -8,9 +8,10 @@ export function SeismicChart() {
   const [events, setEvents] = useState<any[]>([]);
 
   useEffect(() => {
-    api.getSeismic({ hours: 24, limit: 1000 }).then((res) => {
-      setEvents(res.events || []);
-    }).catch(() => {});
+    const fetch = () => api.getSeismic({ hours: 24, limit: 1000 }).then((res) => setEvents(res.events || [])).catch(() => {});
+    fetch();
+    const interval = setInterval(fetch, 60000);
+    return () => clearInterval(interval);
   }, []);
 
   // Bucket events by hour

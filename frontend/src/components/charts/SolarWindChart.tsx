@@ -64,21 +64,21 @@ export function SolarWindChart() {
   const [data, setData] = useState<any[]>([]);
 
   useEffect(() => {
-    api.getSolarWindHistory({ hours: 24 }).then((res) => {
-      if (res?.readings?.length > 0) {
-        const points = res.readings.map((r: any) => ({
-          time: new Date(r.time).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
-          speed: r.speed,
-          density: r.density,
-        }));
-        if (points.length > 50) {
-          const step = Math.ceil(points.length / 50);
-          setData(points.filter((_: any, i: number) => i % step === 0));
-        } else {
-          setData(points);
+    const fetch = () => {
+      api.getSolarWindHistory({ hours: 24 }).then((res) => {
+        if (res?.readings?.length > 0) {
+          const points = res.readings.map((r: any) => ({
+            time: new Date(r.time).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
+            speed: r.speed,
+            density: r.density,
+          }));
+          setData(points.length > 50 ? points.filter((_: any, i: number) => i % Math.ceil(points.length / 50) === 0) : points);
         }
-      }
-    }).catch(() => {});
+      }).catch(() => {});
+    };
+    fetch();
+    const interval = setInterval(fetch, 60000);
+    return () => clearInterval(interval);
   }, []);
 
   return (
