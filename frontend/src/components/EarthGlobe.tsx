@@ -9,9 +9,9 @@ const GLOBE_HOURS = 2;
 const FLY_ALTITUDE = 1.0;
 const FLY_DURATION = 1200;
 const GLOBE_RADIUS = 100;
-const PULSE_COUNT = 3; // Number of concurrent pulse rings per event
-const PULSE_SPEED = 0.008; // Expansion speed per frame
-const PULSE_MAX_SCALE = 3.0; // Max size before reset
+const PULSE_COUNT = 3;
+const PULSE_SPEED = 0.003; // Slower — was 0.008
+const PULSE_MAX_SCALE = 2.0; // Smaller expansion — was 3.0
 
 let globeInstance: any = null;
 export function getGlobe() { return globeInstance; }
@@ -132,8 +132,8 @@ export function EarthGlobe() {
     // Create new pulse rings for each event
     filteredEvents.forEach((e) => {
       const mag = e.magnitude || 1;
-      const radiusKm = Math.pow(10, mag * 0.45) * 1.5;
-      const radiusUnits = Math.max(0.8, Math.min(radiusKm * (GLOBE_RADIUS / 40075) * 111, 15));
+      const radiusKm = Math.pow(10, mag * 0.4) * 2; // M1≈5km, M3≈30km, M5≈200km
+      const radiusUnits = Math.max(0.5, Math.min(radiusKm * (GLOBE_RADIUS / 40075) * 111, 8));
       const color = new THREE.Color(DOMAIN_COLORS[e.domain] || '#6b7280');
       const coords = globe.getCoords(e.latitude, e.longitude, 0.001);
 
