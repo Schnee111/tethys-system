@@ -131,7 +131,7 @@ export function EarthGlobe() {
     );
     group.add(sphere);
 
-    // Impact ring — flat on globe surface (XY plane = perpendicular to Y = away from globe)
+    // Impact ring — on earth surface (push down from marker altitude)
     const ring = new THREE.Mesh(
       new THREE.RingGeometry(d.ringRadius * 0.7, d.ringRadius, 48),
       new THREE.MeshBasicMaterial({
@@ -141,6 +141,7 @@ export function EarthGlobe() {
         side: THREE.DoubleSide,
       })
     );
+    ring.position.y = -d.alt; // Push ring down to surface level
     group.add(ring);
 
     return group;
