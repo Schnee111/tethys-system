@@ -260,10 +260,10 @@ export function EarthGlobe() {
           opacity: d.opacity ?? 0.95,
         });
 
-        // Volcanic: flat diamond (distinct from seismic sphere)
+        // Volcanic: ring (flat on surface, distinct from sphere)
         if (d.domain === 'volcanic') {
           return new THREE.Mesh(
-            new THREE.OctahedronGeometry(d.size, 0),
+            new THREE.TorusGeometry(d.size, d.size * 0.3, 8, 16),
             mat,
           );
         }
