@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
 import { useGlassStyle } from '../utils/glass';
 import { api } from '../api/client';
 
-interface SpaceWeatherEvent {
+interface SpaceEvent {
   time: string;
   event_id: string;
   event_type: string;
@@ -12,46 +11,34 @@ interface SpaceWeatherEvent {
   link: string;
 }
 
-interface SpaceWeatherData {
-  count: number;
-  events: SpaceWeatherEvent[];
-}
-
-const EVENT_COLORS: Record<string, string> = {
-  CME: '#f59e0b',
-  FLARE: '#ef4444',
-};
-
 function eventTypeColor(type: string): string {
-  return EVENT_COLORS[type.toUpperCase()] || '#a78bfa';
+  if (type === 'CME') return '#f59e0b';
+  if (type === 'FLARE') return '#ef4444';
+  return '#a78bfa';
 }
 
-function timeAgo(dateStr: string): string {
-  const now = Date.now();
-  const then = new Date(dateStr).getTime();
-  const diff = now - then;
-  const mins = Math.floor(diff / 60000);
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
-  return `${days}d ago`;
+function timeAgo(time: string): string {
+  const diff = Date.now() - new Date(time).getTime();
+  const h = Math.floor(diff / 3600000);
+  if (h < 1) return 'just now';
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
 }
 
 export function SpaceWeatherCard() {
   const glass = useGlassStyle();
-  const [data, setData] = useState<SpaceWeatherData | null>(null);
+  const [data, setData] = useState<{ events: SpaceEvent[] } | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetch = async () => {
       try {
         const res = await api.getSpaceWeather();
         if (res) setData(res);
       } catch {}
     };
-    fetchData();
-    const interval = setInterval(fetchData, 300000); // 5 minutes
+    fetch();
+    const interval = setInterval(fetch, 300000);
     return () => clearInterval(interval);
   }, []);
 
@@ -63,74 +50,80 @@ export function SpaceWeatherCard() {
         <span style={{ fontSize: 9, letterSpacing: '0.1em', color: 'rgba(161,161,170,0.8)', textTransform: 'uppercase', fontWeight: 600 }}>
           Space Weather
         </span>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#52525b' }}>Source: NASA DONKI</span>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#52525b' }}>NASA DONKI</span>
       </div>
 
       {events.length === 0 ? (
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#71717a', textAlign: 'center', padding: '8px 0' }}>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#52525b', textAlign: 'center', padding: '8px 0' }}>
           No recent events
         </span>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 320, overflowY: 'auto' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', maxHeight: 320, overflowY: 'auto' }}>
           {events.map((ev) => {
             const color = eventTypeColor(ev.event_type);
             const isExpanded = expandedId === ev.event_id;
-            const shortDesc = ev.description?.length > 80
-              ? ev.description.slice(0, 80) + '…'
-              : ev.description || '';
             return (
               <div
                 key={ev.event_id}
                 onClick={() => setExpandedId(isExpanded ? null : ev.event_id)}
-                style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 3 }}
+                style={{
+                  cursor: 'pointer',
+                  padding: '8px 0',
+                  borderBottom: '1px solid rgba(255,255,255,0.04)',
+                  transition: 'opacity 0.15s',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.8'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{
-                    fontFamily: 'var(--font-mono)', fontSize: 8, fontWeight: 700,
-                    color, textTransform: 'uppercase', letterSpacing: '0.05em',
-                    background: `${color}18`, padding: '2px 6px', borderRadius: 4,
-                  }}>
-                    {ev.event_type}
-                  </span>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#71717a' }}>
+                {/* Row: badge + time */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{
+                      fontFamily: 'var(--font-mono)', fontSize: 8, fontWeight: 700,
+                      color, textTransform: 'uppercase', letterSpacing: '0.05em',
+                      background: `${color}15`, padding: '1px 6px', borderRadius: 3,
+                    }}>
+                      {ev.event_type}
+                    </span>
+                    {ev.source && (
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#3f3f46' }}>
+                        {ev.source}
+                      </span>
+                    )}
+                  </div>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#52525b' }}>
                     {timeAgo(ev.time)}
                   </span>
                 </div>
-                {!isExpanded && shortDesc && (
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#e4e4e7', lineHeight: 1.4 }}>
-                    {shortDesc}
-                  </span>
+
+                {/* Description — truncated or full */}
+                <p style={{
+                  fontFamily: 'var(--font-mono)', fontSize: 9, color: '#a1a1aa',
+                  lineHeight: 1.5, margin: 0,
+                  overflow: 'hidden',
+                  display: isExpanded ? 'block' : '-webkit-box',
+                  WebkitLineClamp: isExpanded ? undefined : 2,
+                  WebkitBoxOrient: 'vertical',
+                }}>
+                  {ev.description || 'No description.'}
+                </p>
+
+                {/* Link — only when expanded */}
+                {isExpanded && ev.link && (
+                  <a
+                    href={ev.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
+                      display: 'inline-block', marginTop: 6,
+                      fontFamily: 'var(--font-mono)', fontSize: 8, color: '#60a5fa',
+                      textDecoration: 'none',
+                    }}
+                  >
+                    View on NASA DONKI
+                  </a>
                 )}
-                <AnimatePresence>
-                  {isExpanded && (
-                    <motion.div
-                      key="detail"
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.2, ease: 'easeInOut' }}
-                      style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: 4 }}
-                    >
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#e4e4e7', lineHeight: 1.5 }}>
-                        {ev.description || 'No description available.'}
-                      </span>
-                      {ev.link && (
-                        <a
-                          href={ev.link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          style={{
-                            fontFamily: 'var(--font-mono)', fontSize: 8, color: '#60a5fa',
-                            textDecoration: 'underline', textDecorationColor: '#60a5fa40',
-                          }}
-                        >
-                          View on NASA DONKI →
-                        </a>
-                      )}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
               </div>
             );
           })}
