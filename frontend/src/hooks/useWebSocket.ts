@@ -146,6 +146,203 @@ function getWsUrl(): string {
   return `${proto}//${window.location.host}/ws/v1/live`;
 }
 
+// Generate realistic mock data for offline development
+function generateMockData() {
+  const store = useDataStore.getState();
+  
+  // 1. Generate Raw Seismic Events (for charts & globe)
+  const mockRawSeismic: RawSeismicEvent[] = [];
+  const mockEvents: PlanetaryEvent[] = [];
+  const now = new Date();
+  
+  const places = [
+    "Fiji Region", "Honshu, Japan", "Southern Sumatra, Indonesia", "Chile-Argentina Border",
+    "Kermadec Islands, New Zealand", "Hindu Kush Region, Afghanistan", "Rat Islands, Aleutian Islands",
+    "Southern East Pacific Rise", "Banda Sea", "Reykjanes Ridge"
+  ];
+  
+  for (let i = 0; i < 40; i++) {
+    const t = new Date(now.getTime() - i * 25 * 60 * 1000); // every 25 mins
+    const mag = 2.5 + Math.random() * 4.5;
+    const lat = -60 + Math.random() * 120;
+    const lon = -180 + Math.random() * 360;
+    const depth = 10 + Math.random() * 200;
+    const id = `mock-seismic-${i}`;
+    const place = places[i % places.length];
+    
+    mockRawSeismic.push({
+      time: t.toISOString(),
+      event_id: id,
+      magnitude: mag,
+      latitude: lat,
+      longitude: lon,
+      depth_km: depth,
+      place: place,
+      type: "earthquake",
+      sig: Math.round(mag * 100),
+      felt: Math.round(Math.random() * 20),
+      alert: mag > 6 ? 'yellow' : null,
+      tsunami: mag > 6.5 ? 1 : 0
+    });
+    
+    mockEvents.push({
+      time: t.toISOString(),
+      event_id: id,
+      domain: 'seismic',
+      title: `M${mag.toFixed(1)} — ${place}`,
+      location: place,
+      latitude: lat,
+      longitude: lon,
+      magnitude: mag,
+      depth_km: depth,
+      description: `Depth: ${depth.toFixed(1)}km · Sig: ${Math.round(mag * 100)}`,
+      severity: mag >= 6 ? 'critical' : mag >= 5 ? 'high' : mag >= 4 ? 'medium' : 'low',
+    });
+  }
+  
+  // 2. Generate Volcanic Events
+  const volcanoNames = ["Mount Etna, Italy", "Sakurajima, Japan", "Kilauea, Hawaii", "Stromboli, Italy", "Popocatépetl, Mexico"];
+  const volcanoCoords = [
+    { lat: 37.75, lon: 15.00 },
+    { lat: 31.58, lon: 130.65 },
+    { lat: 19.42, lon: -155.28 },
+    { lat: 38.79, lon: 15.21 },
+    { lat: 19.02, lon: -98.62 }
+  ];
+  
+  for (let i = 0; i < volcanoNames.length; i++) {
+    const t = new Date(now.getTime() - i * 3 * 3600 * 1000);
+    const id = `mock-volcano-${i}`;
+    mockEvents.push({
+      time: t.toISOString(),
+      event_id: id,
+      domain: 'volcanic',
+      title: volcanoNames[i],
+      location: volcanoNames[i],
+      latitude: volcanoCoords[i].lat,
+      longitude: volcanoCoords[i].lon,
+      description: `Active volcanic eruption detected at ${volcanoNames[i]}. Muted seismic tremor registered.`,
+      severity: 'medium',
+    });
+  }
+  
+  // 3. Generate Solar Wind Readings
+  const mockRawSolarWind: RawSolarWindReading[] = [];
+  for (let i = 0; i < 50; i++) {
+    const t = new Date(now.getTime() - i * 30 * 60 * 1000);
+    const speed = 350 + Math.random() * 300;
+    const density = 3 + Math.random() * 15;
+    const bt = 4 + Math.random() * 8;
+    const bz_gsm = -6 + Math.random() * 12;
+    
+    mockRawSolarWind.push({
+      time: t.toISOString(),
+      data_type: 'plasma',
+      speed,
+      density,
+      temperature: 50000 + Math.random() * 100000
+    });
+    mockRawSolarWind.push({
+      time: t.toISOString(),
+      data_type: 'mag',
+      bt,
+      bz_gsm,
+      bx_gsm: -2 + Math.random() * 4,
+      by_gsm: -2 + Math.random() * 4
+    });
+    
+    if (i % 5 === 0) {
+      mockEvents.push({
+        time: t.toISOString(),
+        event_id: `mock-sw-${i}`,
+        domain: 'solar_wind',
+        title: `Solar Wind — ${speed.toFixed(0)} km/s`,
+        location: 'Heliospheric',
+        latitude: 0,
+        longitude: 0,
+        description: `Speed: ${speed.toFixed(0)} km/s · Density: ${density.toFixed(1)} p/cm³`,
+        severity: speed > 600 ? 'high' : speed > 400 ? 'medium' : 'low',
+      });
+    }
+  }
+  
+  // 4. Generate GOES Readings
+  const mockRawGoes: RawGoesReading[] = [];
+  for (let i = 0; i < 50; i++) {
+    const t = new Date(now.getTime() - i * 15 * 60 * 1000);
+    const flux = 1e-8 + Math.random() * 2e-5;
+    mockRawGoes.push({
+      time: t.toISOString(),
+      flux_type: 'xray',
+      energy_band: '0.1-0.8nm',
+      flux,
+      satellite: 'goes-16'
+    });
+    
+    if (i % 6 === 0) {
+      mockEvents.push({
+        time: t.toISOString(),
+        event_id: `mock-goes-${i}`,
+        domain: 'goes',
+        title: `GOES X-ray — ${flux.toExponential(1)}`,
+        location: 'Geostationary Orbit',
+        latitude: 0,
+        longitude: -75,
+        description: `X-ray Flux: ${flux.toExponential(2)} · Satellite: goes-16`,
+        severity: flux > 1e-4 ? 'critical' : flux > 1e-5 ? 'high' : flux > 1e-6 ? 'medium' : 'low',
+      });
+    }
+  }
+
+  // 5. Generate Anomalies
+  const mockAnomalies = [
+    {
+      time: now.toISOString(),
+      anomaly_id: "mock-anom-1",
+      domain: "seismic",
+      metric: "magnitude",
+      value: 7.2,
+      z_score: 4.8,
+      severity: "high",
+      description: "M7.2 earthquake anomaly detected"
+    },
+    {
+      time: new Date(now.getTime() - 2 * 3600000).toISOString(),
+      anomaly_id: "mock-anom-2",
+      domain: "solar_wind",
+      metric: "avg_speed",
+      value: 650,
+      z_score: 3.9,
+      severity: "medium",
+      description: "Solar wind speed spike: 650 km/s"
+    }
+  ];
+
+  // Set standard status
+  store.setStatus({
+    status: "offline_mock",
+    version: "0.1.0-mock",
+    uptime_seconds: 3600,
+    environment: "development",
+    collectors: {
+      seismic: { status: "ok", last_poll: now.toISOString(), records: 40, latency_ms: 120, error: null },
+      solar_wind: { status: "ok", last_poll: now.toISOString(), records: 100, latency_ms: 80, error: null },
+      goes: { status: "ok", last_poll: now.toISOString(), records: 50, latency_ms: 90, error: null }
+    },
+    database: {
+      tables: { seismic_events: 40, solar_wind: 100, goes_flux: 50 },
+      total_records: 190,
+      size: "1.2 MB"
+    }
+  });
+
+  store.setEvents(mockEvents);
+  store.setRawSeismic(mockRawSeismic);
+  store.setRawSolarWind(mockRawSolarWind);
+  store.setRawGoes(mockRawGoes);
+  store.setAnomalies(mockAnomalies);
+}
+
 interface UseWebSocketOptions {
   enabled?: boolean;
   reconnectInterval?: number;  // base reconnect delay (ms)
@@ -302,6 +499,12 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 
     ws.onerror = (err) => {
       console.error('[WS] Error:', err);
+      // Generate realistic mock data when offline to prevent empty interface
+      const currentEvents = useDataStore.getState().events;
+      if (currentEvents.length === 0) {
+        console.log('[WS] Connection failed. Populating mock data for development...');
+        generateMockData();
+      }
     };
   }, [enabled, reconnectInterval, maxReconnectAttempts, setWsConnected, setEvents, addEvents, setRawSeismic, setRawGoes, setRawSolarWind, addRawSeismic, addRawGoes, addRawSolarWind]);
 
