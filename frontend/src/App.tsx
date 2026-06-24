@@ -24,7 +24,7 @@ export default function App() {
   const GLASS = useGlassStyle();
 
   // WebSocket for real-time events
-  const { isConnected } = useWebSocket();
+  const { isConnected, reconnect } = useWebSocket();
 
   // Initial REST fetch
   useEffect(() => {
@@ -69,6 +69,28 @@ export default function App() {
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.1em', color: isConnected ? '#4ade80' : '#ef4444', textTransform: 'uppercase', fontWeight: 600 }}>
                 {isConnected ? 'LIVE' : 'OFFLINE'}
               </span>
+              {!isConnected && (
+                <button
+                  onClick={reconnect}
+                  title="Force reconnect to backend"
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.08)',
+                    border: 'none',
+                    borderRadius: 4,
+                    color: '#fff',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: 8,
+                    padding: '1px 6px',
+                    cursor: 'pointer',
+                    marginLeft: 6,
+                    transition: 'all 0.2s',
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.18)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
+                >
+                  RECONNECT
+                </button>
+              )}
             </div>
             {/* Inline stats */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontFamily: 'var(--font-mono)', fontSize: 10 }}>

@@ -180,19 +180,17 @@ function Marker({ event, color, isSelected, opacity, size, onHover, onHoverOut, 
 }
 
 // Realistic Earth globe mesh with texture maps
-function EarthModel() {
-  const colorMap = useLoader(THREE.TextureLoader, 'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg');
-  const bumpMap = useLoader(THREE.TextureLoader, 'https://unpkg.com/three-globe/example/img/earth-topology.png');
-
+function EarthModel({ colorMap, bumpMap }: { colorMap: THREE.Texture | null; bumpMap: THREE.Texture | null }) {
   return (
     <mesh>
       <sphereGeometry args={[GLOBE_RADIUS, 64, 64]} />
       <meshPhongMaterial
-        map={colorMap}
-        bumpMap={bumpMap}
+        map={colorMap || undefined}
+        bumpMap={bumpMap || undefined}
         bumpScale={0.08}
-        specular={new THREE.Color('#111')}
-        shininess={5}
+        color={colorMap ? undefined : '#0f172a'}
+        specular={new THREE.Color(colorMap ? '#111' : '#1e293b')}
+        shininess={colorMap ? 5 : 15}
       />
     </mesh>
   );
@@ -222,6 +220,29 @@ export function TethysGlobe() {
   const { activeCategories, minMagnitude, maxMagnitude, timelinePercent, selectedEvent, setSelectedEvent, setAltitude } = useGlobeStore();
   const [hoveredEvent, setHoveredEvent] = useState<any>(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+
+  // Texture state for asynchronous loading with fallback
+  const [textures, setTextures] = useState<{ colorMap: THREE.Texture | null; bumpMap: THREE.Texture | null }>({
+    colorMap: null,
+    bumpMap: null,
+  });
+
+  useEffect(() => {
+    const loader = new THREE.TextureLoader();
+    loader.load(
+      'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg',
+      (tex) => setTextures((prev) => ({ ...prev, colorMap: tex })),
+      undefined,
+      (err) => console.warn('Could not load Earth color map texture. Using stylized blue fallback.')
+    );
+    loader.load(
+      'https://unpkg.com/three-globe/example/img/earth-topology.png',
+      (tex) => setTextures((prev) => ({ ...prev, bumpMap: tex })),
+      undefined,
+      (err) => console.warn('Could not load Earth topology bump map texture.')
+    );
+  }, []);
+
 
   // Altitude tracking inside OrbitControls change
   const handleControlsChange = () => {
@@ -297,7 +318,7 @@ export function TethysGlobe() {
           <Stars radius={60} depth={30} count={3500} factor={3} saturation={0} fade speed={0.5} />
           
           <group>
-            <EarthModel />
+            <EarthModel colorMap={textures.colorMap} bumpMap={textures.bumpMap} />
             <AtmosphereModel />
 
             {/* Event Markers & Pulse Epicenter Rings */}

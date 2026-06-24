@@ -353,7 +353,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
   const {
     enabled = true,
     reconnectInterval = 2000,
-    maxReconnectAttempts = 20,
+    maxReconnectAttempts = 5,
   } = options;
 
   const wsRef = useRef<WebSocket | null>(null);
@@ -491,9 +491,11 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
           reconnectInterval * Math.pow(1.5, reconnectAttempt.current),
           30000 // Max 30s between retries
         );
-        console.log(`[WS] Reconnecting in ${(delay / 1000).toFixed(1)}s (attempt ${reconnectAttempt.current + 1})`);
+        console.log(`[WS] Reconnecting in ${(delay / 1000).toFixed(1)}s (attempt ${reconnectAttempt.current + 1}/${maxReconnectAttempts})`);
         reconnectAttempt.current++;
         reconnectTimer.current = setTimeout(connect, delay);
+      } else if (reconnectAttempt.current >= maxReconnectAttempts) {
+        console.warn(`[WS] Reconnection stopped after ${maxReconnectAttempts} failed attempts. Running in offline/demo mode.`);
       }
     };
 
