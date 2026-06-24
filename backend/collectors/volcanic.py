@@ -27,33 +27,17 @@ class VolcanicCollector(BaseCollector):
         ON CONFLICT (time, event_id) DO NOTHING
     """
 
-    async def _fetch_eonet_json(self) -> dict:
-        """Fetch JSON from EONET with explicit Accept header.
-
-        EONET returns RSS/XML by default. Must request JSON explicitly.
-        content_type=None disables aiohttp's mime-type check (EONET
-        sometimes returns JSON body with RSS content-type header).
-        """
-        import aiohttp
-
-        async with (
-            aiohttp.ClientSession() as session,
-            session.get(
-                self.endpoint,
-                headers={"Accept": "application/json"},
-                timeout=aiohttp.ClientTimeout(total=self.timeout),
-            ) as resp,
-        ):
-            resp.raise_for_status()
-            return await resp.json(content_type=None)
-
     async def collect(self) -> list[dict[str, Any]]:
         """Fetch volcanic event data from NASA EONET API.
 
         Returns list of parsed event dicts ready for format_record().
         Only includes active (not closed) events.
         """
-        data = await self._fetch_eonet_json()
+        data = await self.fetch_json(
+            self.endpoint,
+            headers={"Accept": "application/json"},
+            content_type=None,
+        )
         events = data.get("events", [])
         return [self._parse_event(e) for e in events if e.get("closed") is None]
 

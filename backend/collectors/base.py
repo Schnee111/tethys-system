@@ -75,22 +75,42 @@ class BaseCollector(ABC):
         """Convert record dict to tuple matching insert_query placeholders."""
         ...
 
-    async def fetch_json(self, url: str) -> dict | list:
-        """Fetch JSON from URL with timeout. Returns parsed response."""
+    async def fetch_json(
+        self,
+        url: str,
+        headers: dict | None = None,
+        content_type: str | None = "application/json",
+    ) -> dict | list:
+        """Fetch JSON from URL with timeout, stores raw response in database, and returns parsed response."""
         async with (
             aiohttp.ClientSession() as session,
-            session.get(url, timeout=aiohttp.ClientTimeout(total=self.timeout)) as resp,
+            session.get(
+                url,
+                headers=headers,
+                timeout=aiohttp.ClientTimeout(total=self.timeout),
+            ) as resp,
         ):
             resp.raise_for_status()
-            return await resp.json()
+            data = await resp.json(content_type=content_type)
+
+            # Store raw response in database
+            async with self.pool.acquire() as conn:
+                await self.store_raw(conn, data, resp.status, url=url)
+
+            return data
 
     async def store_raw(
-        self, conn: asyncpg.Connection, response_body: dict | list, response_code: int = 200
+        self,
+        conn: asyncpg.Connection,
+        response_body: dict | list,
+        response_code: int = 200,
+        url: str | None = None,
     ) -> None:
         """Store raw API response for event sourcing (debugging, reprocessing)."""
         body_json = (
             json.dumps(response_body) if not isinstance(response_body, str) else response_body
         )
+        request_url = url or self.endpoint
         try:
             await conn.execute(
                 """
@@ -99,7 +119,7 @@ class BaseCollector(ABC):
                 """,
                 datetime.now(UTC),
                 self.name,
-                self.endpoint,
+                request_url,
                 response_code,
                 body_json,
             )

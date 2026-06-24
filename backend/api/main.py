@@ -15,7 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from backend.api.routes.analysis import router as analysis_router
 from backend.api.routes.events import router as events_router
-from backend.api.routes.websocket import broadcast_event
+from backend.api.routes.websocket import broadcast_event, websocket_heartbeat
 from backend.api.routes.websocket import router as ws_router
 from backend.collectors.atmospheric import AtmosphericCollector
 from backend.collectors.base import set_broadcast_callback
@@ -58,6 +58,9 @@ async def lifespan(app: FastAPI):
     # Wire WebSocket broadcast into collectors
     set_broadcast_callback(broadcast_event)
 
+    # Start WebSocket heartbeat background task
+    heartbeat_task = asyncio.create_task(websocket_heartbeat())
+
     # Start collectors as background tasks (same process = broadcast works)
     collectors = [
         SeismicCollector(pool),
@@ -73,9 +76,10 @@ async def lifespan(app: FastAPI):
     yield
 
     # Shutdown
+    heartbeat_task.cancel()
     for task in collector_tasks:
         task.cancel()
-    await asyncio.gather(*collector_tasks, return_exceptions=True)
+    await asyncio.gather(heartbeat_task, *collector_tasks, return_exceptions=True)
     set_broadcast_callback(None)
     await close_pool()
 

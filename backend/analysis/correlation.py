@@ -85,11 +85,15 @@ class CorrelationEngine:
         """
         results = []
 
+        # If either domain is atmospheric, use daily bucketing to align them correctly
+        use_daily = (domain_a == "atmospheric") or (domain_b == "atmospheric")
+        bucket = "1 day" if use_daily else "1 hour"
+
         for lag_hours in LAG_WINDOWS:
             data_a = await self._query_metric(
-                pool, domain_a, metric_a, window_hours + lag_hours, lag_hours
+                pool, domain_a, metric_a, window_hours + lag_hours, lag_hours, bucket=bucket
             )
-            data_b = await self._query_metric(pool, domain_b, metric_b, window_hours, 0)
+            data_b = await self._query_metric(pool, domain_b, metric_b, window_hours, 0, bucket=bucket)
 
             if not data_a or not data_b:
                 continue
@@ -234,6 +238,7 @@ class CorrelationEngine:
         metric: str,
         window_hours: int,
         lag_hours: int,
+        bucket: str = "1 hour",
     ) -> dict:
         """Query a metric from the appropriate table, aligned to time buckets."""
         table = DOMAIN_TABLES.get(domain)
@@ -248,11 +253,12 @@ class CorrelationEngine:
         else:
             select = f"AVG({metric}) AS value"
 
-        bucket = "1 hour" if table != "atmospheric_daily" else "1 day"
+        # Force daily bucket for atmospheric_daily as it has no hourly resolution
+        actual_bucket = "1 day" if table == "atmospheric_daily" else bucket
 
         if lag_hours > 0:
             query = f"""
-                SELECT time_bucket('{bucket}', time) AS bucket, {select}
+                SELECT time_bucket('{actual_bucket}', time) AS bucket, {select}
                 FROM {table}
                 WHERE time > NOW() - make_interval(hours => $1)
                   AND time < NOW() - make_interval(hours => $2)
@@ -260,7 +266,7 @@ class CorrelationEngine:
             """
         else:
             query = f"""
-                SELECT time_bucket('{bucket}', time) AS bucket, {select}
+                SELECT time_bucket('{actual_bucket}', time) AS bucket, {select}
                 FROM {table}
                 WHERE time > NOW() - make_interval(hours => $1)
                 GROUP BY bucket ORDER BY bucket
