@@ -6,6 +6,7 @@ import { useWebSocket } from './hooks/useWebSocket';
 import { api } from './api/client';
 import { useGlassStyle } from './utils/glass';
 import { TethysGlobe } from './components/globe/TethysGlobe';
+import { ErrorBoundary } from './components/shared/ErrorBoundary';
 import { LiveFeed } from './components/layout/LiveFeed';
 import { SolarWindCard } from './components/cards/SolarWindCard';
 import { GoesCard } from './components/cards/GoesCard';
@@ -54,7 +55,9 @@ export default function App() {
   return (
     <>
       {/* Globe — IS the background */}
-      <TethysGlobe />
+      <ErrorBoundary name="TethysGlobe">
+        <TethysGlobe />
+      </ErrorBoundary>
 
       {/* UI Layer */}
       <div style={{ position: 'fixed', inset: 0, zIndex: 10, pointerEvents: 'none' }}>

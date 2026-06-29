@@ -7,6 +7,10 @@ import { magnitudeColor, DOMAIN_COLORS } from '../../utils/colors';
 import { api } from '../../api/client';
 import type { PlanetaryEvent } from '../../types';
 
+
+
+
+
 const TIME_RANGES = [
   { label: '24h', hours: 24 },
   { label: '7d', hours: 168 },
@@ -204,6 +208,8 @@ export function LiveFeed() {
                   </div>
                 )}
               </div>
+
+
             </div>
           </motion.div>
         )}

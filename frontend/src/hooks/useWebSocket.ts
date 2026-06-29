@@ -316,7 +316,7 @@ function generateMockData() {
       severity: "medium",
       description: "Solar wind speed spike: 650 km/s"
     }
-  ];
+  ] as const as Anomaly[];
 
   // Set standard status
   store.setStatus({

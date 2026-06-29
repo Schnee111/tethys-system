@@ -239,20 +239,76 @@ function transformAnomaly(a: any): Anomaly {
 }
 
 export const api = {
-  getStatus: () => client.get('/api/v1/status').then(r => r.data),
+  getStatus: async () => {
+    try {
+      return await client.get('/api/v1/status').then(r => r.data);
+    } catch {
+      return { active_alerts: 0, systems_online: 0, network_load: 0, last_updated: new Date().toISOString() };
+    }
+  },
   getSeismic: async (params?: { hours?: number; min_mag?: number; limit?: number }) => {
-    const { data } = await client.get('/api/v1/events/seismic', { params });
-    return { count: data.count, events: (data.events || []).map(transformSeismic) };
+    try {
+      const { data } = await client.get('/api/v1/events/seismic', { params });
+      return { count: data.count, events: (data.events || []).map(transformSeismic) };
+    } catch {
+      return { count: 0, events: [] };
+    }
   },
   getAnomalies: async (params?: { hours?: number; domain?: string; severity?: string }) => {
-    const { data } = await client.get('/api/v1/anomalies', { params });
-    return { count: data.count, anomalies: (data.anomalies || []).map(transformAnomaly) };
+    try {
+      const { data } = await client.get('/api/v1/anomalies', { params });
+      return { count: data.count, anomalies: (data.anomalies || []).map(transformAnomaly) };
+    } catch {
+      return { count: 0, anomalies: [] };
+    }
   },
-  getActivity: () => client.get('/api/v1/activity').then(r => r.data),
-  getSolarWindLatest: () => client.get('/api/v1/solar-wind/latest').then(r => r.data),
-  getSolarWindHistory: (params?: { hours?: number }) => client.get('/api/v1/solar-wind/history', { params }).then(r => r.data),
-  getGoesXray: (params?: { hours?: number }) => client.get('/api/v1/goes/xray', { params }).then(r => r.data),
-  getVolcanic: () => client.get('/api/v1/volcanic').then(r => r.data),
-  getAtmospheric: (params?: { hours?: number }) => client.get('/api/v1/atmospheric', { params }).then(r => r.data),
-  getSpaceWeather: () => client.get('/api/v1/space-weather').then(r => r.data),
+  getActivity: async () => {
+    try {
+      return await client.get('/api/v1/activity').then(r => r.data);
+    } catch {
+      return { activity_level: "unknown", activity_score: 0 };
+    }
+  },
+  getSolarWindLatest: async () => {
+    try {
+      return await client.get('/api/v1/solar-wind/latest').then(r => r.data);
+    } catch {
+      return { speed: 0, density: 0, temperature: 0, bz_gsm: 0, bt: 0 };
+    }
+  },
+  getSolarWindHistory: async (params?: { hours?: number }) => {
+    try {
+      return await client.get('/api/v1/solar-wind/history', { params }).then(r => r.data);
+    } catch {
+      return [];
+    }
+  },
+  getGoesXray: async (params?: { hours?: number }) => {
+    try {
+      return await client.get('/api/v1/goes/xray', { params }).then(r => r.data);
+    } catch {
+      return { count: 0, readings: [] };
+    }
+  },
+  getVolcanic: async () => {
+    try {
+      return await client.get('/api/v1/volcanic').then(r => r.data);
+    } catch {
+      return { count: 0, events: [] };
+    }
+  },
+  getAtmospheric: async (params?: { hours?: number }) => {
+    try {
+      return await client.get('/api/v1/atmospheric', { params }).then(r => r.data);
+    } catch {
+      return { count: 0, readings: [] };
+    }
+  },
+  getSpaceWeather: async () => {
+    try {
+      return await client.get('/api/v1/space-weather').then(r => r.data);
+    } catch {
+      return { events: [] };
+    }
+  },
 };
