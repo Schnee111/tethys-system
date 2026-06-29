@@ -1,0 +1,37 @@
+# Tethys — Production Environment
+# Usage: docker compose -f docker-compose.prod.yml up -d --build
+
+services:
+  timescaledb:
+    image: timescale/timescaledb:latest-pg16
+    container_name: tethys-db-prod
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: tethys
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-tethys_prod}
+      POSTGRES_DB: tethys
+    volumes:
+      - tethys-prod-data:/var/lib/postgresql/data
+      - ./backend/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tethys -d tethys"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  tethys-api:
+    build: .
+    container_name: tethys-api-prod
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://tethys:${DB_PASSWORD:-tethys_prod}@timescaledb:5432/tethys
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  tethys-prod-data:
