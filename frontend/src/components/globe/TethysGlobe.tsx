@@ -328,6 +328,10 @@ export function TethysGlobe() {
       container: containerRef.current, style: STYLE, center: [0,20], zoom: 2.5, pitch: 0, maxPitch: 85,
       renderWorldCopies: false, attributionControl: false,
       canvasContextAttributes: { alpha: true, premultipliedAlpha: false },
+      // Prefetch tiles beyond viewport — prevents pop-in during auto-rotate
+      maxTileCacheSize: 500,
+      maxTileCacheZoomLevels: 8,
+      fadeDuration: 0,
     });
     map.addControl(new maplibregl.NavigationControl({ showCompass: false, showZoom: false }), 'bottom-right');
 
