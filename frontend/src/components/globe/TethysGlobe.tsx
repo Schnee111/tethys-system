@@ -484,13 +484,14 @@ export function TethysGlobe() {
 
       if (autoRotating) {
         // Bypass jumpTo → stop() to avoid killing any active drag inertia.
-        // jumpTo() calls this.stop() as first line (MapLibre line 69320) which
-        // resets ALL handlers including ScrollZoomHandler and kills drag momentum.
         // Direct transform mutation — same pattern as pitch fix below.
         const center = map.getCenter();
         const t = (map as any).transform;
         t.setCenter(new maplibregl.LngLat(center.lng + ROTATION_SPEED * dt, center.lat));
         t.setBearing(0);
+        // triggerRepaint only redraws — doesn't trigger tile loading pipeline.
+        // _update() forces MapLibre to check visible tiles and load missing ones.
+        (map as any)._update?.();
         map.triggerRepaint();
       }
 
