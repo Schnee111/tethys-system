@@ -117,13 +117,17 @@ class DONKICollector(BaseCollector):
     def _parse_event(self, event: dict[str, Any], event_type: str) -> dict[str, Any] | None:
         """Parse a single DONKI event object into a record dict.
 
-        Returns ``None`` when the mandatory ``activityID`` field is missing.
+        Returns ``None`` when the mandatory ``activityID`` or ``startTime`` field is missing.
         """
         event_id = event.get("activityID")
         if not event_id:
             return None
 
         time = _parse_timestamp(event.get("startTime"))
+        # Skip events with NULL time — violates hypertable constraint
+        if time is None:
+            return None
+
         source = event.get("sourceLocation")
         speed = event.get("speed")
         latitude, longitude = _parse_source_location(source)

@@ -1,4 +1,4 @@
-"""Tethys — Tests for SolarWindCollector."""
+"""Tethys — Tests for SolarWindCollector (combined endpoint)."""
 
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
@@ -6,10 +6,9 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from backend.collectors.solar_wind import (
-    MAG_INSERT_QUERY,
-    PLASMA_INSERT_QUERY,
+    COMBINED_INSERT_QUERY,
     SolarWindCollector,
-    _parse_noaa_response,
+    _parse_combined_response,
     _safe_float,
 )
 
@@ -39,22 +38,12 @@ def mock_pool():
 
 
 @pytest.fixture
-def sample_plasma_raw():
-    """NOAA-format plasma response (array-of-arrays, header + 2 data rows)."""
+def sample_combined_raw():
+    """NOAA geospace combined response (plasma + mag in one file)."""
     return [
-        ["time_tag", "density", "speed", "temperature"],
-        ["2025-06-20 12:00:00.000", "5.2", "400.1", "120000.5"],
-        ["2025-06-20 12:05:00.000", "", "401.3", "125000"],  # empty density
-    ]
-
-
-@pytest.fixture
-def sample_mag_raw():
-    """NOAA-format magnetometer response."""
-    return [
-        ["time_tag", "bx_gsm", "by_gsm", "bz_gsm", "lon_gsm", "lat_gsm", "bt"],
-        ["2025-06-20 12:00:00.000", "-2.1", "3.4", "-5.0", "120.3", "-45.2", "6.7"],
-        ["2025-06-20 12:05:00.000", "-2.5", "null", "-4.8", "119.8", "-44.9", "6.2"],
+        ["time_tag", "speed", "density", "temperature", "bx", "by", "bz", "bt", "vx", "vy", "vz", "propagated_time_tag"],
+        ["2025-06-20T12:00:00Z", "400.1", "5.2", "120000.5", "-2.1", "3.4", "-5.0", "6.7", "-370.0", "40.0", "-45.0", "2025-06-20T12:55:00Z"],
+        ["2025-06-20T12:05:00Z", "401.3", "", "125000", "-2.5", "null", "-4.8", "6.2", "-371.0", "41.0", "-44.0", "2025-06-20T13:00:00Z"],
     ]
 
 
@@ -91,75 +80,69 @@ class TestSafeFloat:
     def test_non_numeric(self):
         assert _safe_float("abc") is None
 
+    def test_numeric_input(self):
+        assert _safe_float(5.2) == 5.2
+
 
 # ---------------------------------------------------------------------------
-# _parse_noaa_response tests
+# _parse_combined_response tests
 # ---------------------------------------------------------------------------
 
 
-class TestParseNoaaResponse:
+class TestParseCombinedResponse:
     def test_empty_input(self):
-        assert _parse_noaa_response([], "plasma") == []
+        assert _parse_combined_response([]) == []
 
     def test_header_only(self):
-        assert _parse_noaa_response([["a", "b"]], "plasma") == []
+        assert _parse_combined_response([["a", "b"]]) == []
 
-    def test_plasma_parsing(self, sample_plasma_raw):
-        records = _parse_noaa_response(sample_plasma_raw, "plasma")
+    def test_combined_parsing(self, sample_combined_raw):
+        records = _parse_combined_response(sample_combined_raw)
         assert len(records) == 2
 
         r0 = records[0]
-        assert r0["data_type"] == "plasma"
         assert r0["time"] == datetime(2025, 6, 20, 12, 0, 0, tzinfo=UTC)
-        assert r0["density"] == 5.2
         assert r0["speed"] == 400.1
+        assert r0["density"] == 5.2
         assert r0["temperature"] == 120000.5
+        assert r0["bx_gsm"] == -2.1
+        assert r0["by_gsm"] == 3.4
+        assert r0["bz_gsm"] == -5.0
+        assert r0["bt"] == 6.7
 
-        # Second row: density is empty → None
+        # Second row: density is empty → None, by_gsm is "null" → None
         r1 = records[1]
         assert r1["density"] is None
         assert r1["speed"] == 401.3
-
-    def test_mag_parsing(self, sample_mag_raw):
-        records = _parse_noaa_response(sample_mag_raw, "mag")
-        assert len(records) == 2
-
-        r0 = records[0]
-        assert r0["data_type"] == "mag"
-        assert r0["bx_gsm"] == -2.1
-        assert r0["bt"] == 6.7
-
-        # Second row: by_gsm is "null" → None
-        r1 = records[1]
         assert r1["by_gsm"] is None
         assert r1["bz_gsm"] == -4.8
 
     def test_skips_row_without_time(self):
         raw = [
-            ["time_tag", "density", "speed", "temperature"],
-            ["", "5.2", "400", "120000"],  # empty time → skip
-            ["2025-06-20 12:00:00.000", "6.0", "410", "130000"],
+            ["time_tag", "speed", "density"],
+            ["", "400", "5.2"],  # empty time → skip
+            ["2025-06-20T12:00:00Z", "410", "6.0"],
         ]
-        records = _parse_noaa_response(raw, "plasma")
+        records = _parse_combined_response(raw)
         assert len(records) == 1
 
     def test_short_row_padded(self):
         """Rows shorter than header should be padded with None."""
         raw = [
-            ["time_tag", "density", "speed", "temperature"],
-            ["2025-06-20 12:00:00.000", "5.2"],  # only 2 cols
+            ["time_tag", "speed", "density", "temperature"],
+            ["2025-06-20T12:00:00Z", "400.1"],  # only 2 cols
         ]
-        records = _parse_noaa_response(raw, "plasma")
+        records = _parse_combined_response(raw)
         assert len(records) == 1
-        assert records[0]["speed"] is None
+        assert records[0]["density"] is None
         assert records[0]["temperature"] is None
 
-    def test_time_with_z_suffix(self):
+    def test_time_with_space_separator(self):
         raw = [
-            ["time_tag", "density"],
-            ["2025-06-20T12:00:00Z", "5.0"],
+            ["time_tag", "speed"],
+            ["2025-06-20 12:00:00.000", "400.0"],
         ]
-        records = _parse_noaa_response(raw, "plasma")
+        records = _parse_combined_response(raw)
         assert records[0]["time"] == datetime(2025, 6, 20, 12, 0, 0, tzinfo=UTC)
 
 
@@ -174,45 +157,35 @@ class TestSolarWindCollector:
         c = SolarWindCollector(pool)
         assert c.name == "solar_wind"
         assert c.poll_interval == 300
-        assert c.insert_query == PLASMA_INSERT_QUERY
+        assert c.insert_query == COMBINED_INSERT_QUERY
 
-    async def test_collect_merges_both_feeds(self, mock_pool, sample_plasma_raw, sample_mag_raw):
+    async def test_collect_combined_feed(self, mock_pool, sample_combined_raw):
         pool, _ = mock_pool
         c = SolarWindCollector(pool)
 
         async def mock_fetch(url):
-            if "plasma" in url:
-                return sample_plasma_raw
-            return sample_mag_raw
+            return sample_combined_raw
 
         c.fetch_json = mock_fetch
         records = await c.collect()
 
-        assert len(records) == 4  # 2 plasma + 2 mag
-        plasma = [r for r in records if r["data_type"] == "plasma"]
-        mag = [r for r in records if r["data_type"] == "mag"]
-        assert len(plasma) == 2
-        assert len(mag) == 2
+        assert len(records) == 2
+        # Combined format — no data_type field
+        assert "speed" in records[0]
+        assert "bx_gsm" in records[0]
 
-    async def test_store_splits_by_type(self, mock_pool, sample_plasma_raw, sample_mag_raw):
+    async def test_store_combined(self, mock_pool, sample_combined_raw):
         pool, conn = mock_pool
         c = SolarWindCollector(pool)
 
-        plasma_records = _parse_noaa_response(sample_plasma_raw, "plasma")
-        mag_records = _parse_noaa_response(sample_mag_raw, "mag")
-        all_records = plasma_records + mag_records
+        records = _parse_combined_response(sample_combined_raw)
+        result = await c.store(records)
 
-        result = await c.store(all_records)
-
-        assert result == 4
-        # executemany should have been called twice (plasma + mag)
-        assert conn.executemany.call_count == 2
-
-        # Verify the correct queries were used
+        assert result == 2
+        # Single combined query
+        assert conn.executemany.call_count == 1
         calls = conn.executemany.call_args_list
-        queries_used = [call.args[0] for call in calls]
-        assert PLASMA_INSERT_QUERY in queries_used
-        assert MAG_INSERT_QUERY in queries_used
+        assert calls[0].args[0] == COMBINED_INSERT_QUERY
 
     async def test_store_empty_returns_zero(self, mock_pool):
         pool, conn = mock_pool
@@ -221,119 +194,39 @@ class TestSolarWindCollector:
         assert result == 0
         conn.executemany.assert_not_called()
 
-    async def test_store_plasma_only(self, mock_pool, sample_plasma_raw):
+    async def test_store_filters_null_time(self, mock_pool):
         pool, conn = mock_pool
         c = SolarWindCollector(pool)
 
-        records = _parse_noaa_response(sample_plasma_raw, "plasma")
+        records = [
+            {"time": datetime(2025, 6, 20, 12, 0, 0, tzinfo=UTC), "speed": 400.0, "density": 5.0, "temperature": 120000.0, "bx_gsm": -2.0, "by_gsm": 3.0, "bz_gsm": -5.0, "bt": 6.0},
+            {"time": None, "speed": 410.0},  # NULL time → filtered
+        ]
         result = await c.store(records)
+        assert result == 1
 
-        assert result == 2
-        # Only plasma query should be called (mag list is empty)
-        assert conn.executemany.call_count == 1
-        conn.executemany.assert_called_once_with(
-            PLASMA_INSERT_QUERY,
-            [
-                (
-                    datetime(2025, 6, 20, 12, 0, 0, tzinfo=UTC),
-                    5.2,
-                    400.1,
-                    120000.5,
-                ),
-                (
-                    datetime(2025, 6, 20, 12, 5, 0, tzinfo=UTC),
-                    None,
-                    401.3,
-                    125000.0,
-                ),
-            ],
-        )
-
-    async def test_store_mag_only(self, mock_pool, sample_mag_raw):
-        pool, conn = mock_pool
+    async def test_format_record(self, mock_pool):
+        pool, _ = mock_pool
         c = SolarWindCollector(pool)
 
-        records = _parse_noaa_response(sample_mag_raw, "mag")
-        result = await c.store(records)
-
-        assert result == 2
-        assert conn.executemany.call_count == 1
-        args = conn.executemany.call_args
-        assert args.args[0] == MAG_INSERT_QUERY
-        # First tuple: all fields present
-        assert args.args[1][0] == (
+        record = {
+            "time": datetime(2025, 6, 20, 12, 0, 0, tzinfo=UTC),
+            "speed": 400.1,
+            "density": 5.2,
+            "temperature": 120000.5,
+            "bt": 6.7,
+            "bx_gsm": -2.1,
+            "by_gsm": 3.4,
+            "bz_gsm": -5.0,
+        }
+        t = c.format_record(record)
+        assert t == (
             datetime(2025, 6, 20, 12, 0, 0, tzinfo=UTC),
+            400.1,
+            5.2,
+            120000.5,
             6.7,
             -2.1,
             3.4,
             -5.0,
-            120.3,
-            -45.2,
         )
-
-    async def test_format_record_satisfies_abc(self, mock_pool):
-        """format_record exists to satisfy the ABC contract."""
-        pool, _ = mock_pool
-        c = SolarWindCollector(pool)
-        result = c.format_record(
-            {
-                "time": datetime.now(UTC),
-                "density": 5.0,
-                "speed": 400.0,
-                "temperature": 100000.0,
-            }
-        )
-        assert isinstance(result, tuple)
-        assert len(result) == 4
-
-
-# ---------------------------------------------------------------------------
-# Real-world API shape simulation
-# ---------------------------------------------------------------------------
-
-
-class TestRealWorldShape:
-    """Simulate the exact response format from NOAA SWPC."""
-
-    async def test_full_plasma_cycle(self, mock_pool):
-        """End-to-end: raw NOAA plasma JSON → parsed → stored."""
-        pool, conn = mock_pool
-        c = SolarWindCollector(pool)
-
-        # Simulate real NOAA response
-        raw_plasma = [
-            ["time_tag", "density", "speed", "temperature"],
-            ["2025-06-18 00:00:00.000", "3.51", "358.7", "47468.4"],
-            ["2025-06-18 00:01:00.000", "3.57", "359.1", "48012.7"],
-            ["2025-06-18 00:02:00.000", "", "", ""],  # all empty → all None
-        ]
-
-        raw_mag = [
-            ["time_tag", "bx_gsm", "by_gsm", "bz_gsm", "lon_gsm", "lat_gsm", "bt"],
-            ["2025-06-18 00:00:00.000", "-3.70", "0.20", "-2.80", "175.54", "-39.77", "4.65"],
-        ]
-
-        async def mock_fetch(url):
-            return raw_plasma if "plasma" in url else raw_mag
-
-        c.fetch_json = mock_fetch
-        records = await c.collect()
-
-        # 3 plasma + 1 mag = 4 total
-        assert len(records) == 4
-
-        plasma_records = [r for r in records if r["data_type"] == "plasma"]
-        mag_records = [r for r in records if r["data_type"] == "mag"]
-        assert len(plasma_records) == 3
-        assert len(mag_records) == 1
-
-        # The all-empty row should have all-None numeric fields
-        empty_row = plasma_records[2]
-        assert empty_row["density"] is None
-        assert empty_row["speed"] is None
-        assert empty_row["temperature"] is None
-
-        # Store it
-        result = await c.store(records)
-        assert result == 4
-        assert conn.executemany.call_count == 2

@@ -130,11 +130,19 @@ class BaseCollector(ABC):
         """Bulk insert with upsert. Uses executemany for performance.
 
         Override in subclass if multiple queries needed (e.g., SolarWind).
+        Filters out records with None time to prevent hypertable violations.
         """
         if not records:
             return 0
+        # Safety: skip records with NULL time (violates TimescaleDB hypertable constraint)
+        valid = [r for r in records if r.get("time") is not None]
+        skipped = len(records) - len(valid)
+        if skipped > 0:
+            logger.warning(f"{self.name}: skipped {skipped} records with NULL time")
+        if not valid:
+            return 0
         async with self.pool.acquire() as conn, conn.transaction():
-            values = [self.format_record(r) for r in records]
+            values = [self.format_record(r) for r in valid]
             await conn.executemany(self.insert_query, values)
             return len(values)
 
