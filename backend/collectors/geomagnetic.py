@@ -13,9 +13,9 @@ from backend.collectors.base import BaseCollector
 logger = logging.getLogger(__name__)
 
 # NOAA SWPC geomagnetic indices endpoints
-KP_ENDPOINT = "https://services.swpc.noaa.gov/json/noaa-planetary-k-index.json"
+KP_ENDPOINT = "https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json"
 DST_ENDPOINT = "https://services.swpc.noaa.gov/products/kyoto-dst.json"
-AE_ENDPOINT = "https://services.swpc.noaa.gov/json/planetary_a_index.json"
+AE_ENDPOINT = "https://services.swpc.noaa.gov/products/planetary_a_index.json"
 
 
 class GeomagneticCollector(BaseCollector):
