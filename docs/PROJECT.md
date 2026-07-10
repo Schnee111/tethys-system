@@ -211,13 +211,476 @@ instead of 1-2 days delayed.
 
 ---
 
-### 7. Additional Sources (Future Phases)
+### 7. Geomagnetic Indices — NOAA SWPC
 
-- **INTERMAGNET** — Global magnetometer network (1-min data)
-- **NASA GRACE-FO** — Gravity field changes (monthly)
-- **Copernicus Marine** — Ocean temperature, currents
-- **NASA FIRMS** — Fire detection (satellite)
-- **NOAA Tsunami Warning** — Real-time tsunami alerts
+**Source:** NOAA Space Weather Prediction Center
+**Endpoint:** `https://services.swpc.noaa.gov/json/planetary_k_index_1m.json`
+**Format:** JSON
+**Update Frequency:** Every 1 minute
+**Authentication:** None required
+**Priority:** 🔴 **CRITICAL** — Missing link between solar wind and seismic activity
+
+**Available Endpoints:**
+- `planetary_k_index_1m.json` — 1-minute Kp index
+- `planetary_a_index.json` — Daily Ap index
+- `dst.json` — Dst index (equatorial electrojet)
+- `ae_index.json` — Auroral Electrojet index
+
+**Data Fields (Kp Index):**
+- `time_tag` — ISO timestamp
+- `kp_index` — Planetary K-index (0-9 scale, logarithmic)
+- `ap_index` — Planetary A-index (linear scale, nT)
+
+**Data Fields (Dst Index):**
+- `time_tag` — ISO timestamp
+- `dst` — Disturbance Storm Time index (nT)
+- Negative values indicate geomagnetic storms (< -50 nT = storm, < -100 nT = intense)
+
+**Relevance:**
+- Direct measure of geomagnetic response to solar wind
+- Critical for validating solar-seismic correlation hypothesis
+- Pattern detection: "Kp > 7 → 24-48h later seismic activity increase"
+- Table `geomagnetic_indices` already exists in schema
+
+---
+
+### 8. Ionospheric TEC — NASA JPL / IGS
+
+**Source:** NASA Jet Propulsion Laboratory / International GNSS Service
+**Endpoint:** `https://cddis.nasa.gov/archive/gnss/products/ionex/`
+**Format:** IONEX (Ionosphere Map Exchange format)
+**Update Frequency:** Every 2 hours (final maps), 15 min (rapid)
+**Authentication:** NASA Earthdata login (free registration)
+**Priority:** 🟡 **HIGH** — Ionospheric disturbances correlate with seismic activity
+
+**Available Data:**
+- Global Ionosphere Maps (GIM) — TEC values worldwide
+- TEC in TECU (1 TECU = 10^16 electrons/m²)
+- Slant TEC along satellite paths
+
+**Data Fields:**
+- `time` — UTC timestamp
+- `latitude`, `longitude` — Grid point (2.5° × 5° resolution)
+- `tec` — Total Electron Content (TECU)
+- `rms` — Root mean square error
+
+**Relevance:**
+- Ionospheric anomalies precede major earthquakes (research shows 24-48h before)
+- TEC depletion/enhancement indicates ionospheric disturbances
+- Can detect traveling ionospheric disturbances (TIDs) from seismic events
+- Complements geomagnetic data for complete space weather picture
+
+**Implementation Notes:**
+- Large data files (~50MB per day)
+- Requires parsing IONEX format (text-based grid data)
+- Consider using rapid products for near-real-time (15-min delay)
+- Alternative: Use Madrigal database API for easier access
+
+---
+
+### 9. Cosmic Ray — Neutron Monitor Database (NMDB)
+
+**Source:** Neutron Monitor Database (NMDB) / Oulu Cosmic Ray Station
+**Endpoint:** `http://nmdb.eu/nestjson.php`
+**Format:** JSON
+**Update Frequency:** Every 1 minute
+**Authentication:** None required
+**Priority:** 🟡 **HIGH** — Cosmic ray increases may precede earthquakes
+
+**Available Endpoints:**
+- `/nestjson.php?station=Oulu&datatype=corr&format=sec` — Oulu station, corrected data, second resolution
+- `/nestjson.php?stationlist=all&datatype=raw&format=hour` — All stations, hourly data
+
+**Data Fields:**
+- `datetime` — ISO timestamp
+- `count_rate` — Neutron count rate (counts/min)
+- `pressure_corrected` — Pressure-corrected count rate
+- `error` — Statistical error
+
+**Relevance:**
+- Cosmic ray intensity increases before earthquakes (Forbush decreases after)
+- Mechanism: tectonic stress → radon emission → ionization → aerosol formation → cloud microphysics → atmospheric electric field → cosmic ray modulation
+- Global network of neutron monitors (50+ stations)
+- Can detect ground-level enhancements (GLE) from solar events
+
+**Implementation Notes:**
+- Data available from 1950s onwards (excellent for historical analysis)
+- Multiple stations worldwide for redundancy
+- Requires atmospheric pressure correction
+- Consider using Oulu station as primary (longest continuous record)
+
+---
+
+### 10. Lightning — World Wide Lightning Location Network (WWLLN)
+
+**Source:** University of Washington / WWLLN
+**Endpoint:** `https://wwlln.net/new/tech/data.php`
+**Format:** CSV / JSON (via API request)
+**Update Frequency:** Near real-time (1-5 min delay)
+**Authentication:** API key required (free for research)
+**Priority:** 🟢 **MEDIUM** — Lightning activity correlates with atmospheric and seismic events
+
+**Available Data:**
+- Global lightning stroke locations
+- Stroke time (microsecond precision)
+- Stroke energy (relative)
+- Lightning density maps
+
+**Data Fields:**
+- `time` — UTC timestamp (μs)
+- `latitude`, `longitude` — Stroke location
+- `energy` — Relative stroke energy
+- `station_count` — Number of detecting stations
+
+**Relevance:**
+- Lightning rate increases before earthquakes (electrification of rocks)
+- Correlates with atmospheric convection and severe weather
+- Can detect volcanic lightning (distinguishes eruption type)
+- Global coverage (oceans and land)
+
+**Implementation Notes:**
+- High data volume (~1000 strokes/sec globally)
+- Requires spatial/temporal binning for analysis
+- API access requires registration
+- Alternative: Use GLD360 (Vaisala) for commercial-grade data
+
+---
+
+### 11. Ocean Indices — NOAA / Copernicus Marine
+
+**Source:** NOAA Climate Prediction Center / Copernicus Marine Service
+**Endpoints:**
+- ENSO: `https://origin.cpc.ncep.noaa.gov/products/analysis_monitoring/ens_advisory/ens_sst.shtml`
+- NAO: `https://origin.cpc.ncep.noaa.gov/products/precip/CWlink/pna/norm.nao.shtml`
+- Copernicus: `https://resources.marine.copernicus.eu/API/?service_id=GLOBAL_ANALYSIS_FORECAST_PHY_001_024`
+**Format:** CSV / NetCDF
+**Update Frequency:** Weekly (ENSO/NAO), Daily (Copernicus)
+**Authentication:** Copernicus requires free registration
+**Priority:** 🟢 **MEDIUM** — Long-term climate patterns affect all domains
+
+**Available Indices:**
+- **ENSO (El Niño/La Niña):** Ocean Niño Index (ONI), Niño 3.4 SST anomaly
+- **NAO (North Atlantic Oscillation):** Pressure difference between Azores High and Icelandic Low
+- **PDO (Pacific Decadal Oscillation):** Long-term Pacific SST pattern
+- **AMO (Atlantic Multidecadal Oscillation):** North Atlantic SST variability
+
+**Data Fields (ENSO):**
+- `season` — 3-month season (DJF, JJA, etc.)
+- `oni` — Ocean Niño Index (°C anomaly)
+- `classification` — El Niño / La Niña / Neutral
+
+**Data Fields (Copernicus):**
+- `time` — UTC timestamp
+- `latitude`, `longitude` — Grid point (0.083° resolution)
+- `temperature` — Sea surface temperature (°C)
+- `salinity` — Practical salinity (PSU)
+- `current_u`, `current_v` — Ocean current components (m/s)
+- `ssh` — Sea surface height (m)
+
+**Relevance:**
+- ENSO affects global atmospheric circulation → space weather propagation
+- Ocean temperature anomalies → atmospheric pressure changes → storm patterns
+- Long-term climate cycles modulate baseline conditions
+- Copernicus data enables ocean-atmosphere coupling analysis
+
+**Implementation Notes:**
+- ENSO/NAO indices are simple CSV downloads (easy to implement)
+- Copernicus data is large (global gridded, 3D)
+- Consider using regional subsets (Pacific for ENSO, Atlantic for NAO)
+- Monthly averages sufficient for most analyses
+
+---
+
+### 12. Gravity Field — NASA GRACE-FO
+
+**Source:** NASA / German Research Centre for Geosciences (GFZ)
+**Endpoint:** `https://podaac.jpl.nasa.gov/dataset/TELLUS_GRAC-GRFO_MASCON_CRI_GRID_RL06.3_V4`
+**Format:** NetCDF
+**Update Frequency:** Monthly (with ~2 month latency)
+**Authentication:** NASA Earthdata login (free)
+**Priority:** 🟢 **LOW** — Monthly data, not real-time
+
+**Available Data:**
+- Earth's gravity field anomalies (mascons)
+- Equivalent water thickness (cm)
+- Groundwater storage changes
+
+**Data Fields:**
+- `time` — Month (YYYY-MM)
+- `latitude`, `longitude` — Grid point (1° resolution)
+- `lwe_thickness` — Liquid water equivalent thickness (cm)
+- `uncertainty` — Measurement uncertainty
+
+**Relevance:**
+- Mass redistribution indicates tectonic stress accumulation
+- Groundwater changes affect crustal loading
+- Correlates with large earthquake preparation zones
+- Complements GPS/InSAR deformation data
+
+**Implementation Notes:**
+- Monthly data only (not suitable for real-time monitoring)
+- Large spatial resolution (1° × 1°)
+- 2-month latency limits usefulness for pattern detection
+- Consider using for background context only
+
+---
+
+### 13. Fire Detection — NASA FIRMS
+
+**Source:** NASA Fire Information for Resource Management System (FIRMS)
+**Endpoint:** `https://firms.modaps.eosdis.nasa.gov/api/area/csv/OPEN_DATA_TOKEN`
+**Format:** CSV
+**Update Frequency:** Every 3-4 hours (near real-time)
+**Authentication:** NASA FIRMS API key (free registration)
+**Priority:** 🟢 **MEDIUM** — Fires affect atmospheric composition and temperature
+
+**Available Data:**
+- Active fire detections (MODIS, VIIRS satellites)
+- Fire radiative power (FRP)
+- Fire location and confidence
+
+**Data Fields:**
+- `latitude`, `longitude` — Fire location
+- `brightness` — Brightness temperature (K)
+- `frp` — Fire radiative power (MW)
+- `confidence` — Detection confidence (low/nominal/high)
+- `satellite` — MODIS/Terra, MODIS/Aqua, VIIRS
+
+**Relevance:**
+- Volcanic fires distinguish eruption type
+- Large fires affect atmospheric aerosol → temperature anomalies
+- Fire smoke affects atmospheric pressure and wind patterns
+- Correlates with drought conditions (atmospheric domain)
+
+**Implementation Notes:**
+- High data volume (~10,000 fires/day globally)
+- Requires spatial filtering (focus on regions of interest)
+- API key required (free for research, 1000 requests/day)
+- Consider using 24-hour aggregates for analysis
+
+---
+
+### 14. Tsunami Warning — NOAA
+
+**Source:** NOAA National Tsunami Warning Center
+**Endpoint:** `https://www.tsunami.gov/events/xml/PAAQEvent.xml`
+**Format:** XML / CAP (Common Alerting Protocol)
+**Update Frequency:** Event-driven (real-time)
+**Authentication:** None required
+**Priority:** 🟡 **HIGH** — Critical for safety (though Tethys is not a warning system)
+
+**Available Data:**
+- Tsunami warnings, watches, advisories
+- Earthquake parameters that triggered alert
+- Estimated arrival times
+- Recommended actions
+
+**Data Fields:**
+- `event_id` — Unique event identifier
+- `alert_level` — Warning / Watch / Advisory / Information
+- `magnitude` — Earthquake magnitude
+- `location` — Epicenter description
+- `time` — Event time (UTC)
+- `coordinates` — [latitude, longitude, depth]
+- `arrival_times` — Estimated tsunami arrival times by location
+
+**Relevance:**
+- Validates seismic event significance
+- Provides context for large earthquakes (M7+)
+- Cross-reference with USGS seismic data
+- Historical archive of tsunami events
+
+**Implementation Notes:**
+- Event-driven (only data when events occur)
+- XML parsing required (CAP format)
+- Low data volume (few events per year)
+- Consider archiving all events for historical analysis
+
+---
+
+### 15. Tide Gauge — NOAA / IOC Sea Level Monitoring
+
+**Source:** NOAA Tides & Currents / IOC Sea Level Monitoring Facility
+**Endpoints:**
+- NOAA: `https://api.tidesandcurrents.noaa.gov/api/prod/datagetter`
+- IOC: `https://www.ioc-sealevelmonitoring.org/service.php`
+**Format:** JSON / CSV
+**Update Frequency:** Every 6 minutes (NOAA), hourly (IOC)
+**Authentication:** None required
+**Priority:** 🟢 **LOW** — Sea level changes are slow
+
+**Available Data:**
+- Water level (relative to datum)
+- Meteorological observations (pressure, wind)
+- Quality flags
+
+**Data Fields (NOAA):**
+- `t` — Time (UTC)
+- `v` — Water level value (meters/feet)
+- `q` — Quality flag (v = verified, p = preliminary)
+- `s` — Sigma (standard deviation)
+
+**Relevance:**
+- Sea level anomalies from tsunamis (validation)
+- Storm surge from atmospheric pressure changes
+- Long-term sea level rise (climate context)
+- Co-seismic sea level changes (large earthquakes)
+
+**Implementation Notes:**
+- Thousands of stations worldwide
+- Requires station selection (focus on key locations)
+- NOAA API limited to US stations
+- IOC provides global coverage but slower updates
+- Consider using 100 key stations for global monitoring
+
+---
+
+### 16. Radon Gas — ISMN (International Soil Moisture Network) / Research Networks
+
+**Source:** Various research networks (no single global source)
+**Endpoint:** Research-specific (e.g., Japanese network, European networks)
+**Format:** CSV / JSON
+**Update Frequency:** Hourly (research networks)
+**Authentication:** Varies by network
+**Priority:** 🔴 **CRITICAL** — Radon increases precede earthquakes
+
+**Available Data:**
+- Soil radon concentration (Bq/m³)
+- Soil temperature and moisture
+- Atmospheric pressure
+
+**Data Fields:**
+- `time` — UTC timestamp
+- `radon_concentration` — Radon activity (Bq/m³)
+- `depth` — Measurement depth (cm)
+- `temperature` — Soil temperature (°C)
+- `moisture` — Soil moisture (%)
+
+**Relevance:**
+- Radon emission increases before earthquakes (rock stress → microfractures → radon release)
+- Mechanism: tectonic stress → radon emission → ionization → atmospheric electric field → cosmic ray modulation
+- Leading indicator for earthquake preparation phase
+- Correlates with geomagnetic anomalies
+
+**Implementation Notes:**
+- No single global source (requires multiple research network integrations)
+- Japanese network most active (Tohoku University)
+- European networks (Italy, Greece) also active
+- Data availability varies (some networks restrict access)
+- Consider starting with Japanese network (most open data)
+- Alternative: Use proxy indicators (soil temperature, groundwater level)
+
+---
+
+### 17. Satellite Telemetry — Space-Track.org
+
+**Source:** US Strategic Command / Space-Track.org
+**Endpoint:** `https://www.space-track.org/basicspacedata/query`
+**Format:** JSON / XML / CSV
+**Update Frequency:** Every few hours (TLE updates)
+**Authentication:** Space-Track account (free registration)
+**Priority:** 🟢 **LOW** — Satellite anomalies are rare
+
+**Available Data:**
+- Two-Line Element sets (TLE) for all tracked objects
+- Orbital parameters
+- Decay predictions
+
+**Data Fields:**
+- `NORAD_CATNR` — NORAD catalog number
+- `EPOCH` — Orbital epoch (UTC)
+- `MEAN_MOTION` — Revolutions per day
+- `ECCENTRICITY` — Orbital eccentricity
+- `INCLINATION` — Orbital inclination (degrees)
+- `RA_OF_ASC_NODE` — Right ascension of ascending node (degrees)
+
+**Relevance:**
+- Satellite anomalies may indicate atmospheric density changes
+- Orbital decay affected by thermospheric expansion (geomagnetic storms)
+- Cross-reference with space weather events
+- Detect unusual orbital perturbations
+
+**Implementation Notes:**
+- 20,000+ tracked objects (requires filtering)
+- Focus on key satellites (ISS, weather satellites, GPS constellation)
+- TLE propagation requires SGP4 algorithm
+- Low data volume for selected satellites
+- Consider using public APIs (CelesTrak) for easier access
+
+---
+
+## Data Source Priority Matrix
+
+| Priority | Data Source | Implementation Effort | Impact on Phase 4 |
+|----------|-------------|----------------------|-------------------|
+| 🔴 **CRITICAL** | Geomagnetic Indices (Kp, Dst, AE) | 🟢 Low (1-2 days) | Essential for pattern detection |
+| 🔴 **CRITICAL** | Radon Gas | 🟡 Medium (3-5 days) | Leading earthquake indicator |
+| 🟡 **HIGH** | Ionospheric TEC | 🟡 Medium (2-3 days) | Ionospheric anomaly detection |
+| 🟡 **HIGH** | Cosmic Ray (Neutron Monitors) | 🟢 Low (1-2 days) | Forbush decrease detection |
+| 🟡 **HIGH** | Tsunami Warning | 🟢 Low (1 day) | Event validation |
+| 🟢 **MEDIUM** | Lightning (WWLLN) | 🟡 Medium (2-3 days) | Atmospheric-seismic correlation |
+| 🟢 **MEDIUM** | Ocean Indices (ENSO/NAO) | 🟢 Low (1 day) | Long-term climate context |
+| 🟢 **MEDIUM** | Fire Detection (FIRMS) | 🟢 Low (1 day) | Atmospheric composition |
+| 🟢 **LOW** | Gravity Field (GRACE-FO) | 🟡 Medium (2-3 days) | Monthly mass redistribution |
+| 🟢 **LOW** | Tide Gauge | 🟡 Medium (2-3 days) | Sea level anomalies |
+| 🟢 **LOW** | Satellite Telemetry | 🟡 Medium (2-3 days) | Rare anomalies |
+
+---
+
+## Implementation Roadmap
+
+### Phase 4A: Critical Data Sources (Before Intelligence Layer)
+1. **Geomagnetic Indices** — 1-2 days
+   - Collector for Kp, Dst, AE indices
+   - Table `geomagnetic_indices` already exists
+   - Enables: Solar wind → geomagnetic response → seismic correlation
+
+2. **Cosmic Ray** — 1-2 days
+   - Collector for neutron monitor data
+   - New table `cosmic_ray_data`
+   - Enables: Forbush decrease detection, earthquake precursor analysis
+
+### Phase 4B: High Priority Data Sources (Parallel with Intelligence Layer)
+3. **Ionospheric TEC** — 2-3 days
+   - Collector for TEC data (NASA JPL or Madrigal)
+   - New table `ionospheric_tec`
+   - Enables: Ionospheric anomaly detection
+
+4. **Tsunami Warning** — 1 day
+   - Collector for NOAA tsunami alerts
+   - New table `tsunami_warnings`
+   - Enables: Event validation, safety context
+
+### Phase 4C: Medium Priority Data Sources (After Intelligence Layer)
+5. **Lightning** — 2-3 days
+6. **Ocean Indices** — 1 day
+7. **Fire Detection** — 1 day
+
+### Phase 4D: Low Priority Data Sources (Future Enhancement)
+8. **Radon Gas** — 3-5 days (requires research network integration)
+9. **Gravity Field** — 2-3 days
+10. **Tide Gauge** — 2-3 days
+11. **Satellite Telemetry** — 2-3 days
+
+---
+
+## Data Source Dependencies
+
+```
+Solar Wind (DSCOVR)
+    ↓
+Geomagnetic Indices (Kp, Dst, AE) ← CRITICAL MISSING LINK
+    ↓
+Ionospheric TEC ← Ionospheric response
+    ↓
+Seismic Activity (USGS)
+    ↑
+Cosmic Ray (Neutron Monitors) ← Forbush decreases
+    ↑
+Radon Gas ← Earthquake precursor
+```
+
+**Key Insight:** Geomagnetic indices are the missing link between solar wind and seismic activity. Without this data, pattern detection will be incomplete.
 
 ---
 
