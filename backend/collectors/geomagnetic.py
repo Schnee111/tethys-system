@@ -79,7 +79,11 @@ class GeomagneticCollector(BaseCollector):
                 if not time_str:
                     continue
 
+                # Ensure timezone-aware datetime
                 time = datetime.fromisoformat(time_str.replace("Z", "+00:00"))
+                if time.tzinfo is None:
+                    time = time.replace(tzinfo=UTC)
+                
                 kp_value = float(item.get("Kp", 0))
 
                 # Determine storm level based on Kp
@@ -107,7 +111,11 @@ class GeomagneticCollector(BaseCollector):
                 if not time_str:
                     continue
 
+                # Ensure timezone-aware datetime
                 time = datetime.fromisoformat(time_str.replace("Z", "+00:00"))
+                if time.tzinfo is None:
+                    time = time.replace(tzinfo=UTC)
+                
                 dst_value = float(item.get("dst", 0))
 
                 # Determine storm level based on Dst
@@ -135,7 +143,11 @@ class GeomagneticCollector(BaseCollector):
                 if not time_str:
                     continue
 
+                # Ensure timezone-aware datetime
                 time = datetime.fromisoformat(time_str.replace("Z", "+00:00"))
+                if time.tzinfo is None:
+                    time = time.replace(tzinfo=UTC)
+                
                 ae_value = float(item.get("AE", 0))
 
                 records.append({
