@@ -1,8 +1,8 @@
 """Tethys — Cosmic Ray Collector.
 
-Fetches cosmic ray neutron monitor data from NMDB (Neutron Monitor Database).
-Cosmic ray variations are important for understanding space weather and
-potential earthquake precursors (Forbush decreases).
+Fetches cosmic ray proxy data from GOES integral protons.
+High-energy proton events are related to solar energetic particles (SEPs)
+and can be used as a proxy for cosmic ray activity.
 """
 
 import logging
@@ -13,16 +13,16 @@ from backend.collectors.base import BaseCollector
 
 logger = logging.getLogger(__name__)
 
-# NMDB endpoint for Oulu neutron monitor (primary station)
-NMDB_ENDPOINT = "https://nmdb.eu/nestjson.php"
+# GOES integral protons endpoint (7-day data)
+GOES_PROTONS_ENDPOINT = "https://services.swpc.noaa.gov/json/goes/primary/integral-protons-7-day.json"
 
 
 class CosmicRayCollector(BaseCollector):
-    """Collects cosmic ray data from NMDB neutron monitors."""
+    """Collects cosmic ray proxy data from GOES integral protons."""
 
     name = "cosmic_ray"
-    poll_interval = 3600  # 1 hour (data updates hourly)
-    endpoint = NMDB_ENDPOINT
+    poll_interval = 300  # 5 minutes (data updates every 5 minutes)
+    endpoint = GOES_PROTONS_ENDPOINT
     timeout = 30
 
     insert_query = """
@@ -33,67 +33,85 @@ class CosmicRayCollector(BaseCollector):
 
     def __init__(self, pool):
         super().__init__(pool)
-        self.stations = ["Oulu", "Climax", "McMurdo", "Thule"]  # Primary stations
+        # Focus on high-energy protons as cosmic ray proxy
+        self.energy_bands = [">=100 MeV", ">=500 MeV", ">=10 MeV"]
 
     async def collect(self) -> list[dict[str, Any]]:
-        """Fetch cosmic ray data from multiple neutron monitor stations."""
+        """Fetch GOES integral protons data."""
         all_records = []
 
-        for station in self.stations:
-            try:
-                # Build URL with station parameter
-                url = f"{self.endpoint}?station={station}&datatype=corr&format=hour"
-                data = await self.fetch_json(url)
-                records = self._parse_nmdb_data(data, station)
-                all_records.extend(records)
-                logger.info(f"Fetched {len(records)} cosmic ray records from {station}")
-            except Exception as e:
-                logger.error(f"Failed to fetch cosmic ray data from {station}: {e}")
-                continue
+        try:
+            data = await self.fetch_json(self.endpoint)
+            if isinstance(data, list):
+                all_records.extend(self._parse_protons_data(data))
+        except Exception as e:
+            logger.error(f"Failed to fetch GOES protons data: {e}")
 
         return all_records
 
-    def _parse_nmdb_data(self, data: dict | list, station: str) -> list[dict]:
-        """Parse NMDB JSON response."""
+    def _parse_protons_data(self, data: list[dict]) -> list[dict]:
+        """Parse GOES integral protons data."""
         records = []
 
-        if not isinstance(data, dict):
-            logger.warning(f"Expected dict from NMDB, got {type(data)}")
-            return records
-
-        try:
-            # NMDB returns data in format: {"datatable": {"time": [...], "count": [...]}}
-            datatable = data.get("datatable", {})
-            times = datatable.get("time", [])
-            counts = datatable.get("count", [])
-            errors = datatable.get("error", [None] * len(times))
-
-            for i, time_str in enumerate(times):
-                try:
-                    # Parse timestamp
-                    time = datetime.fromisoformat(time_str.replace("Z", "+00:00"))
-
-                    # Get count rate
-                    count_rate = float(counts[i]) if i < len(counts) else None
-                    if count_rate is None:
-                        continue
-
-                    # Get error if available
-                    error = float(errors[i]) if i < len(errors) and errors[i] else None
-
-                    records.append({
-                        "time": time,
-                        "station": station,
-                        "count_rate": count_rate,
-                        "pressure_corrected": count_rate,  # NMDB data is already corrected
-                        "error": error,
-                    })
-                except (ValueError, TypeError, IndexError) as e:
-                    logger.warning(f"Failed to parse cosmic ray record: {e}")
+        # Group by time to aggregate multiple energy bands
+        time_groups = {}
+        for item in data:
+            try:
+                time_str = item.get("time_tag")
+                if not time_str:
                     continue
 
-        except Exception as e:
-            logger.error(f"Failed to parse NMDB data: {e}")
+                # Ensure timezone-aware datetime
+                time = datetime.fromisoformat(time_str.replace("Z", "+00:00"))
+                if time.tzinfo is None:
+                    time = time.replace(tzinfo=UTC)
+
+                energy = item.get("energy", "")
+                flux = float(item.get("flux", 0))
+                satellite = item.get("satellite", "unknown")
+
+                # Only process energy bands we care about
+                if energy not in self.energy_bands:
+                    continue
+
+                # Group by time
+                time_key = time.isoformat()
+                if time_key not in time_groups:
+                    time_groups[time_key] = {
+                        "time": time,
+                        "fluxes": {},
+                        "satellite": satellite,
+                    }
+
+                time_groups[time_key]["fluxes"][energy] = flux
+
+            except (ValueError, TypeError) as e:
+                logger.warning(f"Failed to parse proton record: {e}")
+                continue
+
+        # Create records for each time point
+        for time_key, group in time_groups.items():
+            try:
+                # Use >=100 MeV as primary cosmic ray proxy
+                primary_flux = group["fluxes"].get(">=100 MeV", 0)
+                if primary_flux == 0:
+                    # Fallback to >=10 MeV if >=100 MeV not available
+                    primary_flux = group["fluxes"].get(">=10 MeV", 0)
+
+                # Create composite station name
+                station = f"goes-{group['satellite']}"
+
+                records.append({
+                    "time": group["time"],
+                    "station": station,
+                    "count_rate": primary_flux,
+                    "pressure_corrected": primary_flux,  # No pressure correction needed for satellite data
+                    "error": None,
+                })
+
+            except Exception as e:
+                logger.warning(f"Failed to create record for {time_key}: {e}")
+                continue
 
         return records
 
