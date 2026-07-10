@@ -13,9 +13,9 @@ from backend.collectors.base import BaseCollector
 logger = logging.getLogger(__name__)
 
 # NOAA SWPC geomagnetic indices endpoints
-KP_ENDPOINT = "https://services.swpc.noaa.gov/json/planetary_k_index_1m.json"
-DST_ENDPOINT = "https://services.swpc.noaa.gov/products/dst.json"
-AE_ENDPOINT = "https://services.swpc.noaa.gov/products/planetary_a_index.json"
+KP_ENDPOINT = "https://services.swpc.noaa.gov/json/noaa-planetary-k-index.json"
+DST_ENDPOINT = "https://services.swpc.noaa.gov/products/kyoto-dst.json"
+AE_ENDPOINT = "https://services.swpc.noaa.gov/json/planetary_a_index.json"
 
 
 class GeomagneticCollector(BaseCollector):
@@ -80,7 +80,7 @@ class GeomagneticCollector(BaseCollector):
                     continue
 
                 time = datetime.fromisoformat(time_str.replace("Z", "+00:00"))
-                kp_value = float(item.get("kp_index", 0))
+                kp_value = float(item.get("Kp", 0))
 
                 # Determine storm level based on Kp
                 storm_level = self._kp_to_storm_level(kp_value)
@@ -97,24 +97,18 @@ class GeomagneticCollector(BaseCollector):
 
         return records
 
-    def _parse_dst(self, data: list[list]) -> list[dict]:
-        """Parse Dst index data (format: [[time, dst], ...])."""
+    def _parse_dst(self, data: list[dict]) -> list[dict]:
+        """Parse Dst index data (JSON format)."""
         records = []
 
-        # Skip header row if present
-        start_idx = 1 if data and isinstance(data[0][0], str) and "time" in data[0][0].lower() else 0
-
-        for row in data[start_idx:]:
+        for item in data:
             try:
-                if len(row) < 2:
-                    continue
-
-                time_str = row[0]
-                if time_str == "data":  # Skip data quality markers
+                time_str = item.get("time_tag")
+                if not time_str:
                     continue
 
                 time = datetime.fromisoformat(time_str.replace("Z", "+00:00"))
-                dst_value = float(row[1])
+                dst_value = float(item.get("dst", 0))
 
                 # Determine storm level based on Dst
                 storm_level = self._dst_to_storm_level(dst_value)
@@ -125,30 +119,24 @@ class GeomagneticCollector(BaseCollector):
                     "value": dst_value,
                     "storm_level": storm_level,
                 })
-            except (ValueError, TypeError, IndexError) as e:
+            except (ValueError, TypeError) as e:
                 logger.warning(f"Failed to parse Dst record: {e}")
                 continue
 
         return records
 
-    def _parse_ae(self, data: list[list]) -> list[dict]:
-        """Parse AE index data (format: [[time, ae, ...], ...])."""
+    def _parse_ae(self, data: list[dict]) -> list[dict]:
+        """Parse AE index data (JSON format)."""
         records = []
 
-        # Skip header row if present
-        start_idx = 1 if data and isinstance(data[0][0], str) and "time" in data[0][0].lower() else 0
-
-        for row in data[start_idx:]:
+        for item in data:
             try:
-                if len(row) < 2:
-                    continue
-
-                time_str = row[0]
-                if time_str == "data":  # Skip data quality markers
+                time_str = item.get("time_tag")
+                if not time_str:
                     continue
 
                 time = datetime.fromisoformat(time_str.replace("Z", "+00:00"))
-                ae_value = float(row[1])
+                ae_value = float(item.get("AE", 0))
 
                 records.append({
                     "time": time,
@@ -156,7 +144,7 @@ class GeomagneticCollector(BaseCollector):
                     "value": ae_value,
                     "storm_level": None,  # AE doesn't have storm levels
                 })
-            except (ValueError, TypeError, IndexError) as e:
+            except (ValueError, TypeError) as e:
                 logger.warning(f"Failed to parse AE record: {e}")
                 continue
 
