@@ -24,6 +24,8 @@ from backend.collectors.goes_flux import GOESFluxCollector
 from backend.collectors.seismic import SeismicCollector
 from backend.collectors.solar_wind import SolarWindCollector
 from backend.collectors.volcanic import VolcanicCollector
+from backend.collectors.geomagnetic import GeomagneticCollector
+from backend.collectors.cosmic_ray import CosmicRayCollector
 from backend.config import DATABASE_URL, TETHYS_ENV
 from backend.db.connection import close_pool, get_pool, init_pool
 from backend.db.schema import create_tables
@@ -69,6 +71,8 @@ async def lifespan(app: FastAPI):
         DONKICollector(pool),
         AtmosphericCollector(pool),
         VolcanicCollector(pool),
+        GeomagneticCollector(pool),
+        CosmicRayCollector(pool),
     ]
     collector_tasks = [asyncio.create_task(c.run()) for c in collectors]
     logger.info(f"Started {len(collectors)} collectors in API server process")

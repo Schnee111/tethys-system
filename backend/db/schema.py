@@ -194,13 +194,34 @@ CREATE TABLE IF NOT EXISTS activity_assessments (
     PRIMARY KEY (time, assessment_id)
 );
 
--- Geomagnetic indices (Kp, Dst)
+-- Geomagnetic indices (Kp, Dst, AE)
 CREATE TABLE IF NOT EXISTS geomagnetic_indices (
-    time          TIMESTAMPTZ NOT NULL,
-    index_type    TEXT NOT NULL,  -- 'kp' or 'dst'
-    value         REAL NOT NULL,
-    storm_level   TEXT,
-    PRIMARY KEY (time, index_type)
+    time TIMESTAMPTZ NOT NULL,
+    index_type TEXT NOT NULL,  -- 'kp', 'dst', or 'ae'
+    value DOUBLE PRECISION NOT NULL,
+    station TEXT,  -- NULL for planetary indices (Kp, Dst), station name for AE
+    PRIMARY KEY (time, index_type, station)
+);
+
+-- Cosmic ray neutron monitor data
+CREATE TABLE IF NOT EXISTS cosmic_ray_data (
+    time TIMESTAMPTZ NOT NULL,
+    station TEXT NOT NULL,  -- 'Oulu', 'Climax', 'McMurdo', 'Thule', etc.
+    count_rate DOUBLE PRECISION NOT NULL,  -- counts per minute
+    pressure_corrected DOUBLE PRECISION,  -- pressure-corrected count rate
+    error DOUBLE PRECISION,  -- statistical error
+    PRIMARY KEY (time, station)
+);
+
+-- Radon gas concentration (earthquake precursor)
+CREATE TABLE IF NOT EXISTS radon_data (
+    time TIMESTAMPTZ NOT NULL,
+    station TEXT NOT NULL,  -- monitoring station name
+    concentration DOUBLE PRECISION NOT NULL,  -- Bq/m³
+    depth DOUBLE PRECISION,  -- measurement depth in cm
+    temperature DOUBLE PRECISION,  -- soil temperature in °C
+    moisture DOUBLE PRECISION,  -- soil moisture percentage
+    PRIMARY KEY (time, station)
 );
 """
 
@@ -218,6 +239,8 @@ SELECT create_hypertable('anomalies', 'time', if_not_exists => TRUE);
 SELECT create_hypertable('correlations', 'time', if_not_exists => TRUE);
 SELECT create_hypertable('activity_assessments', 'time', if_not_exists => TRUE);
 SELECT create_hypertable('geomagnetic_indices', 'time', if_not_exists => TRUE);
+SELECT create_hypertable('cosmic_ray_data', 'time', if_not_exists => TRUE);
+SELECT create_hypertable('radon_data', 'time', if_not_exists => TRUE);
 """
 
 INDEXES_SQL = """
