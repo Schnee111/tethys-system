@@ -14,7 +14,7 @@ from backend.collectors.base import BaseCollector
 logger = logging.getLogger(__name__)
 
 # NMDB endpoint for Oulu neutron monitor (primary station)
-NMDB_ENDPOINT = "http://nmdb.eu/nestjson.php"
+NMDB_ENDPOINT = "https://nmdb.eu/nestjson.php"
 
 
 class CosmicRayCollector(BaseCollector):
