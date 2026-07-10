@@ -67,11 +67,13 @@ export function SolarWindChart() {
   const data = useMemo(() => {
     // Group by time (within 1 minute tolerance) and merge plasma + mag
     const plasmaRecords = rawSolarWind.filter(r => r.data_type === 'plasma');
-    const points = plasmaRecords.map(r => ({
-      time: new Date(r.time).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
-      speed: r.speed ?? null,
-      density: r.density ?? null,
-    }));
+    const points = plasmaRecords
+      .sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime())
+      .map(r => ({
+        time: new Date(r.time).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
+        speed: r.speed ?? null,
+        density: r.density ?? null,
+      }));
 
     // Downsample if too many points
     if (points.length > 50) {

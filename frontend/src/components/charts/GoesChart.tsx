@@ -19,6 +19,7 @@ export function GoesChart() {
   const chartData = useMemo(() => {
     const filtered = rawData
       .filter(r => r.energy_band === '0.1-0.8nm')
+      .sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime())
       .map(r => ({
         time: new Date(r.time).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
         flux: r.flux,
