@@ -164,6 +164,68 @@ async def health_check():
     return {"status": "ok"}
 
 
+@app.get("/api/v1/lifecycle")
+async def lifecycle_status():
+    """Show retention policies, compression policies, and continuous aggregates."""
+    pool = await get_pool()
+    
+    async with pool.acquire() as conn:
+        # Get retention policies
+        retention_rows = await conn.fetch("""
+            SELECT 
+                hypertable_name,
+                config->>'drop_after' as drop_after,
+                schedule_interval,
+                next_start
+            FROM timescaledb_information.jobs
+            WHERE proc_name = 'policy_retention'
+            ORDER BY hypertable_name
+        """)
+        
+        # Get compression policies
+        compression_rows = await conn.fetch("""
+            SELECT 
+                hypertable_name,
+                config->>'compress_after' as compress_after,
+                schedule_interval,
+                next_start
+            FROM timescaledb_information.jobs
+            WHERE proc_name = 'policy_compression'
+            ORDER BY hypertable_name
+        """)
+        
+        # Get continuous aggregates
+        aggregates_rows = await conn.fetch("""
+            SELECT 
+                view_name,
+                materialization_hypertable_name,
+                refresh_policy->>'start_offset' as start_offset,
+                refresh_policy->>'end_offset' as end_offset,
+                refresh_policy->>'schedule_interval' as schedule_interval
+            FROM timescaledb_information.continuous_aggregates
+            ORDER BY view_name
+        """)
+        
+        # Get storage stats
+        storage_rows = await conn.fetch("""
+            SELECT 
+                hypertable_name,
+                pg_size_pretty(approximate_total_size) as total_size,
+                pg_size_pretty(approximate_compressed_size) as compressed_size,
+                pg_size_pretty(approximate_total_size - approximate_compressed_size) as uncompressed_size
+            FROM timescaledb_information.hypertables
+            WHERE approximate_total_size > 0
+            ORDER BY approximate_total_size DESC
+        """)
+    
+    return {
+        "retention_policies": [dict(r) for r in retention_rows],
+        "compression_policies": [dict(r) for r in compression_rows],
+        "continuous_aggregates": [dict(r) for r in aggregates_rows],
+        "storage_stats": [dict(r) for r in storage_rows],
+    }
+
+
 # Serve frontend static files (production mode)
 import os
 from pathlib import Path

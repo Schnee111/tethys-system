@@ -27,17 +27,21 @@ class VolcanicCollector(BaseCollector):
         ON CONFLICT (time, event_id) DO NOTHING
     """
 
+    async def _fetch_eonet_json(self) -> dict:
+        """Fetch raw JSON from EONET API. Separated for testability."""
+        return await self.fetch_json(
+            self.endpoint,
+            headers={"Accept": "application/json"},
+            content_type=None,
+        )
+
     async def collect(self) -> list[dict[str, Any]]:
         """Fetch volcanic event data from NASA EONET API.
 
         Returns list of parsed event dicts ready for format_record().
         Only includes active (not closed) events.
         """
-        data = await self.fetch_json(
-            self.endpoint,
-            headers={"Accept": "application/json"},
-            content_type=None,
-        )
+        data = await self._fetch_eonet_json()
         events = data.get("events", [])
         return [self._parse_event(e) for e in events if e.get("closed") is None]
 
