@@ -14,6 +14,7 @@ const CLASSES = [
 export function GoesChart() {
   const glass = useGlassStyle();
   const rawData = useDataStore(s => s.rawGoes);
+  const isLoading = useDataStore(s => s.isLoading);
 
   // Filter to xray 0.1-0.8nm band and downsample
   const chartData = useMemo(() => {
@@ -38,6 +39,22 @@ export function GoesChart() {
     ? rawData.filter(r => r.energy_band === '0.1-0.8nm').slice(-1)[0]?.flux ?? 0
     : 0;
   const currentClass = CLASSES.reduce((acc, c) => currentFlux >= c.flux ? c : acc, CLASSES[0]);
+
+  if (isLoading) {
+    return (
+      <div style={{ padding: '14px', borderRadius: 16, ...glass, display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: 9, letterSpacing: '0.1em', color: 'rgba(161,161,170,0.8)', textTransform: 'uppercase', fontWeight: 600 }}>
+            GOES X-ray
+          </span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#52525b' }}>Loading...</span>
+        </div>
+        <div style={{ height: 56, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: 24, height: 24, border: '2px solid rgba(255,255,255,0.1)', borderTop: '2px solid #f59e0b', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ padding: '14px', borderRadius: 16, ...glass, display: 'flex', flexDirection: 'column', gap: 4 }}>

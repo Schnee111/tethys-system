@@ -62,6 +62,7 @@ function MiniChart({ data, dataKey, color, label, unit }: {
 export function SolarWindChart() {
   const glass = useGlassStyle();
   const rawSolarWind = useDataStore(s => s.rawSolarWind);
+  const isLoading = useDataStore(s => s.isLoading);
 
   // Merge plasma + mag records into chart-ready points
   const data = useMemo(() => {
@@ -82,6 +83,22 @@ export function SolarWindChart() {
     }
     return points;
   }, [rawSolarWind]);
+
+  if (isLoading) {
+    return (
+      <div style={{ padding: '14px', borderRadius: 16, ...glass, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: 9, letterSpacing: '0.1em', color: 'rgba(161,161,170,0.8)', textTransform: 'uppercase', fontWeight: 600 }}>
+            Solar Wind
+          </span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#52525b' }}>Loading...</span>
+        </div>
+        <div style={{ height: 80, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: 24, height: 24, border: '2px solid rgba(255,255,255,0.1)', borderTop: '2px solid #fbbf24', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ padding: '14px', borderRadius: 16, ...glass, display: 'flex', flexDirection: 'column', gap: 10 }}>

@@ -6,6 +6,7 @@ import { useDataStore } from '../../stores/dataStore';
 export function SeismicChart() {
   const glass = useGlassStyle();
   const events = useDataStore(s => s.rawSeismic);
+  const isLoading = useDataStore(s => s.isLoading);
 
   // Bucket events by hour
   const data = useMemo(() => {
@@ -27,6 +28,22 @@ export function SeismicChart() {
   }, [events]);
 
   const maxCount = Math.max(...data.map(d => d.count), 1);
+
+  if (isLoading) {
+    return (
+      <div style={{ padding: '14px', borderRadius: 16, ...glass, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: 9, letterSpacing: '0.1em', color: 'rgba(161,161,170,0.8)', textTransform: 'uppercase', fontWeight: 600 }}>
+            Seismic Activity
+          </span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#52525b' }}>Loading...</span>
+        </div>
+        <div style={{ height: 64, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: 24, height: 24, border: '2px solid rgba(255,255,255,0.1)', borderTop: '2px solid #f87171', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ padding: '14px', borderRadius: 16, ...glass, display: 'flex', flexDirection: 'column', gap: 8 }}>

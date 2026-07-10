@@ -98,6 +98,51 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+# Custom exception handlers for better error messages
+from fastapi import Request
+from fastapi.responses import JSONResponse
+from asyncpg.exceptions import PostgresConnectionError
+
+
+@app.exception_handler(PostgresConnectionError)
+async def database_connection_handler(request: Request, exc: PostgresConnectionError):
+    """Handle database connection errors gracefully."""
+    return JSONResponse(
+        status_code=503,
+        content={
+            "error": "Database temporarily unavailable",
+            "message": "The system is experiencing database connectivity issues. Please try again in a few moments.",
+            "retry_after": 5,
+        },
+    )
+
+
+@app.exception_handler(Exception)
+async def general_exception_handler(request: Request, exc: Exception):
+    """Handle unexpected errors with user-friendly messages."""
+    logger.error(f"Unhandled error: {exc}", exc_info=True)
+    
+    # Don't expose internal errors in production
+    if TETHYS_ENV == "production":
+        return JSONResponse(
+            status_code=500,
+            content={
+                "error": "Internal server error",
+                "message": "An unexpected error occurred. Our team has been notified.",
+            },
+        )
+    
+    # In development, show the actual error
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": "Internal server error",
+            "message": str(exc),
+            "type": type(exc).__name__,
+        },
+    )
+
 # Include routers
 app.include_router(events_router)
 app.include_router(ws_router)

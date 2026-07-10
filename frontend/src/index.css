@@ -17,6 +17,12 @@ body {
 ::-webkit-scrollbar { display: none; }
 * { scrollbar-width: none; -ms-overflow-style: none; }
 
+/* Loading spinner animation */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 /* All range inputs — white thumb, transparent track */
 input[type="range"] {
   -webkit-appearance: none;
