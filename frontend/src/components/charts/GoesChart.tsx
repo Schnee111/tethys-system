@@ -36,7 +36,7 @@ export function GoesChart() {
   }, [rawData]);
 
   const currentFlux = chartData.length > 0
-    ? rawData.filter(r => r.energy_band === '0.1-0.8nm').slice(-1)[0]?.flux ?? 0
+    ? chartData[chartData.length - 1]?.flux ?? 0
     : 0;
   const currentClass = CLASSES.reduce((acc, c) => currentFlux >= c.flux ? c : acc, CLASSES[0]);
 
