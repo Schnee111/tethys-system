@@ -108,7 +108,7 @@ app.include_router(analysis_router)
 async def get_status():
     """System health and collector status."""
     pool = await get_pool()
-
+    
     async with pool.acquire() as conn:
         # Get collector statuses (latest per collector)
         rows = await conn.fetch("""
@@ -117,7 +117,7 @@ async def get_status():
             FROM collector_status
             ORDER BY collector, time DESC
         """)
-
+        
         # Get total record counts per table
         table_counts = {}
         for table in [
@@ -130,20 +130,38 @@ async def get_status():
         ]:
             count = await conn.fetchval(f"SELECT COUNT(*) FROM {table}")  # noqa: S608
             table_counts[table] = count
-
+        
         # Get database size
         db_size = await conn.fetchval("SELECT pg_size_pretty(pg_database_size(current_database()))")
-
+        
+        # Get collector success/error counts from last 24h
+        collector_metrics = await conn.fetch("""
+            SELECT 
+                collector,
+                COUNT(*) FILTER (WHERE status = 'ok') as success_count,
+                COUNT(*) FILTER (WHERE status = 'error') as error_count,
+                MAX(time) FILTER (WHERE status = 'error') as last_error_time
+            FROM collector_status
+            WHERE time > NOW() - INTERVAL '24 hours'
+            GROUP BY collector
+        """)
+    
     collectors = {}
     for row in rows:
+        # Find metrics for this collector
+        metrics = next((m for m in collector_metrics if m["collector"] == row["collector"]), None)
+        
         collectors[row["collector"]] = {
             "status": row["status"],
             "last_poll": row["time"].isoformat() if row["time"] else None,
             "records": row["records_count"],
             "latency_ms": round(row["latency_ms"], 1) if row["latency_ms"] else None,
             "error": row["error_message"],
+            "success_count_24h": metrics["success_count"] if metrics else 0,
+            "error_count_24h": metrics["error_count"] if metrics else 0,
+            "last_error_time": metrics["last_error_time"].isoformat() if metrics and metrics["last_error_time"] else None,
         }
-
+    
     return {
         "status": "operational",
         "version": TETHYS_VERSION,

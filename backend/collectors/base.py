@@ -64,6 +64,10 @@ class BaseCollector(ABC):
         self.total_records: int = 0
         self.errors_24h: int = 0
         self.last_status: str = "pending"
+        self.success_count: int = 0
+        self.error_count: int = 0
+        self.last_error: str | None = None
+        self.last_error_time: datetime | None = None
 
     @abstractmethod
     async def collect(self) -> list[dict]:
@@ -152,6 +156,11 @@ class BaseCollector(ABC):
         """Log collector health to collector_status table."""
         self.last_status = status
         self.total_records += count
+        
+        if error:
+            self.last_error = error
+            self.last_error_time = datetime.now(UTC)
+        
         try:
             async with self.pool.acquire() as conn:
                 await conn.execute(
@@ -214,12 +223,14 @@ class BaseCollector(ABC):
                 await self.broadcast_new_records(records)
                 await self.log_status("ok", count, time.time() - start)
                 consecutive_errors = 0
+                self.success_count += 1
                 if count > 0:
                     logger.info(f"{self.name}: stored {count} records")
 
             except Exception as e:
                 consecutive_errors += 1
                 self.errors_24h += 1
+                self.error_count += 1
                 error_msg = f"{type(e).__name__}: {e}"
                 await self.log_status("error", 0, time.time() - start, error_msg)
                 logger.error(f"{self.name} error (#{consecutive_errors}): {error_msg}")
@@ -235,3 +246,16 @@ class BaseCollector(ABC):
                 sleep_time = base_sleep
 
             await asyncio.sleep(sleep_time)
+
+    def get_health_summary(self) -> dict:
+        """Return a summary of collector health metrics."""
+        return {
+            "name": self.name,
+            "status": self.last_status,
+            "total_records": self.total_records,
+            "success_count": self.success_count,
+            "error_count": self.error_count,
+            "last_error": self.last_error,
+            "last_error_time": self.last_error_time.isoformat() if self.last_error_time else None,
+            "poll_interval": self.poll_interval,
+        }
