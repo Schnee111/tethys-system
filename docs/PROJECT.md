@@ -314,7 +314,7 @@ instead of 1-2 days delayed.
 ### 10. Lightning — World Wide Lightning Location Network (WWLLN)
 
 **Source:** University of Washington / WWLLN
-**Endpoint:** `https://wwlln.net/new/tech/data.php`
+**Endpoint:** `https://data.wwlln.net/api/v1/strikes`
 **Format:** CSV / JSON (via API request)
 **Update Frequency:** Near real-time (1-5 min delay)
 **Authentication:** API key required (free for research)
@@ -343,6 +343,16 @@ instead of 1-2 days delayed.
 - Requires spatial/temporal binning for analysis
 - API access requires registration
 - Alternative: Use GLD360 (Vaisala) for commercial-grade data
+
+**Current Status:** ⚠️ **NEEDS ALTERNATIVE**
+- WWLLN endpoint tidak accessible (DNS resolution failed)
+- Tidak ada free lightning data API yang available tanpa authentication
+- Collector running tapi tidak collecting data
+- **TODO:** Cari alternatif seperti:
+  - NOAA severe weather alerts (sebagai proxy untuk lightning activity)
+  - OpenWeatherMap Lightning API (paid)
+  - Blitzortung (community network, perlu check API availability)
+  - Implementasi nanti setelah data sources lain selesai
 
 ---
 
