@@ -1,6 +1,6 @@
 # TETHYS — Planetary Intelligence System
 
-> Real-time planetary monitoring dashboard aggregating data from 6 sources, detecting anomalies using statistical analysis, and visualizing global events on an interactive 3D globe.
+> Real-time planetary monitoring dashboard aggregating data from 12 sources, detecting anomalies using statistical analysis, and visualizing global events on an interactive 3D globe.
 
 **Live:** [tethys.web.id](https://tethys.web.id)
 
@@ -10,7 +10,7 @@
 
 TETHYS is a planetary intelligence system that:
 
-- **Collects** data from 6 sources (seismic, solar wind, GOES X-ray, space weather, volcanic, atmospheric)
+- **Collects** data from 12 sources (seismic, solar wind, GOES X-ray, space weather, volcanic, atmospheric, geomagnetic, cosmic ray, ionospheric, lightning, ocean indices, tsunami warnings)
 - **Detects** anomalies using MAD Z-score, Granger causality, Transfer Entropy, and Wavelet Coherence
 - **Visualizes** events on a 3D globe with real-time pulse animations
 - **Streams** live data via WebSocket to connected clients
@@ -22,11 +22,12 @@ Built for GEMASTIK — Software Development (Team of 3, all technical).
 ## Architecture
 
 ```
-[6 Collectors] → [TimescaleDB] → [Analysis Engine] → [FastAPI + WS] → [React Globe]
-     ↓                ↓                  ↓
-  USGS/NOAA      Hypertables      MAD Z-score
-  NASA/EONET     Continuous Aggs   Granger/TE
-  Open-Meteo     Raw Ingestion     Wavelet/ARIMA
+[12 Collectors] → [TimescaleDB] → [Analysis Engine] → [FastAPI + WS] → [React Globe]
+      ↓                ↓                  ↓
+   USGS/NOAA      Hypertables      MAD Z-score
+   NASA/EONET     Continuous Aggs   Granger/TE
+   Open-Meteo     Raw Ingestion     Wavelet/ARIMA
+   NOAA SWPC                        Transfer Entropy
 ```
 
 ### Tech Stack
@@ -54,6 +55,12 @@ Built for GEMASTIK — Software Development (Team of 3, all technical).
 | NASA DONKI | CCMC API | 900s | 40+ | Alert list |
 | NASA EONET | EONET v3 | 3600s | 31+ | Globe markers + LiveFeed |
 | Open-Meteo | Forecast API | 21600s | 1,850+ | Summary card |
+| NOAA Geomagnetic | SWPC Kp/Dst/AE | 300s | 500+ | Geomagnetic activity panel |
+| GOES Cosmic Ray | Proton flux | 300s | 2,000+ | Cosmic ray flux chart |
+| NOAA Ionospheric | GLOTEC TEC | 600s | 900+ | Ionospheric TEC map |
+| WWLLN Lightning | Strike data | 300s | Real-time | Lightning strike markers |
+| NOAA Ocean Indices | ENSO/NAO/PDO | 86400s | 900+ | Climate indices panel |
+| NOAA Tsunami | NWS Alerts | 300s | Event-driven | Tsunami warning alerts |
 
 ---
 
@@ -70,7 +77,7 @@ Built for GEMASTIK — Software Development (Team of 3, all technical).
 ### Live Feed
 - Real-time event streaming via WebSocket
 - Time range selector (24h, 7d, 30d, All)
-- Domain filter (Seismic, Volcanic)
+- Domain filter (Seismic, Volcanic, Space Weather, etc.)
 - Magnitude range filter
 - Event detail cards with full metadata
 - Click event → globe flies to location
@@ -81,6 +88,12 @@ Built for GEMASTIK — Software Development (Team of 3, all technical).
 - **Space Weather**: NASA DONKI CME alerts (expandable detail)
 - **Atmosphere**: Temperature, wind from 20 global stations
 - **Seismic Activity**: 24h event count line chart
+- **Geomagnetic**: Kp/Dst/AE indices + storm level indicators
+- **Cosmic Ray**: GOES proton flux across energy levels
+- **Ionospheric**: TEC (Total Electron Content) global map
+- **Lightning**: Real-time strike detection and mapping
+- **Ocean Indices**: ENSO/NAO climate state tracking
+- **Tsunami Warnings**: Active alerts from NOAA NWS
 
 ### Dashboard
 - Dynamic glassmorphism (adapts to zoom level)
@@ -105,7 +118,7 @@ Built for GEMASTIK — Software Development (Team of 3, all technical).
 | Transfer Entropy | Schreiber 2000 | Nonlinear information flow |
 | Wavelet Coherence | Grinsted 2004 | Time-frequency correlation |
 | Prewhitening | Box & Jenkins 1970 | ARIMA autocorrelation removal |
-| Kp/Dst indices | NOAA SWPC | Standard geomagnetic activity |
+| Kp/Dst/AE indices | NOAA SWPC | Standard geomagnetic activity |
 
 ---
 
@@ -142,7 +155,7 @@ npm run dev
 ### Environment Variables
 
 ```env
-DATABASE_URL=postgresql://tethys:password@localhost:5433/tethys
+DATABASE_URL=postgresql://tethys:***@localhost:5433/tethys
 TETHYS_ENV=development
 LOG_LEVEL=INFO
 ```
@@ -170,19 +183,34 @@ Push to `main` → GitHub Actions → Auto-deploy to VPS.
 ## API Endpoints
 
 ```
+System:
 GET  /api/v1/health              Health check
 GET  /api/v1/status              System status + collector health
-GET  /api/v1/events/seismic      Seismic events (hours, min_mag, limit)
-GET  /api/v1/solar-wind/latest   Latest solar wind reading
-GET  /api/v1/solar-wind/history  Solar wind time-series (hours)
-GET  /api/v1/goes/xray           GOES X-ray flux (hours)
-GET  /api/v1/space-weather       DONKI space weather events
-GET  /api/v1/volcanic            Volcanic events
-GET  /api/v1/atmospheric         Atmospheric readings (hours)
-GET  /api/v1/anomalies           Detected anomalies
-GET  /api/v1/activity            Activity index assessment
-WS   /ws/v1/live                 Real-time event stream
+GET  /api/v1/lifecycle           Database lifecycle policies
+
+Data Sources:
+GET  /api/v1/events/seismic           Seismic events (hours, min_mag, limit)
+GET  /api/v1/events/solar_wind        Solar wind readings (hours, source)
+GET  /api/v1/events/goes              GOES X-ray/proton/electron flux
+GET  /api/v1/events/donki             NASA DONKI space weather events
+GET  /api/v1/events/volcanic          Volcanic events (hours, min_vei)
+GET  /api/v1/events/atmospheric       Atmospheric readings (hours, location)
+GET  /api/v1/events/geomagnetic       Geomagnetic indices Kp/Dst/AE
+GET  /api/v1/events/cosmic_ray        Cosmic ray proton flux
+GET  /api/v1/events/ionospheric       Ionospheric TEC data
+GET  /api/v1/events/lightning         Lightning strikes
+GET  /api/v1/events/ocean_indices     Ocean climate indices (ENSO/NAO)
+GET  /api/v1/events/tsunami_warning   Active tsunami warnings
+
+Analysis:
+GET  /api/v1/anomalies                Detected anomalies
+GET  /api/v1/activity                 Activity index assessment
+
+WebSocket:
+WS   /ws/v1/live                      Real-time event stream
 ```
+
+Full API documentation: [docs/API.md](docs/API.md)
 
 ---
 
@@ -191,22 +219,37 @@ WS   /ws/v1/live                 Real-time event stream
 ```
 tethys/
 ├── backend/
-│   ├── api/           # FastAPI routes + WebSocket
-│   ├── analysis/      # Anomaly detection + correlation
-│   ├── collectors/    # 6 data source collectors
-│   ├── db/            # Schema + connection pool
-│   └── config.py      # Environment config
+│   ├── api/              # FastAPI routes + WebSocket
+│   ├── analysis/         # Anomaly detection + correlation
+│   ├── collectors/       # 12 data source collectors
+│   │   ├── seismic.py
+│   │   ├── solar_wind.py
+│   │   ├── goes_flux.py
+│   │   ├── donki.py
+│   │   ├── volcanic.py
+│   │   ├── atmospheric.py
+│   │   ├── geomagnetic.py
+│   │   ├── cosmic_ray.py
+│   │   ├── ionospheric.py
+│   │   ├── lightning.py
+│   │   ├── ocean_indices.py
+│   │   └── tsunami_warning.py
+│   ├── db/               # Schema + connection pool
+│   └── config.py         # Environment config
 ├── frontend/
 │   ├── src/
-│   │   ├── components/    # React components
-│   │   ├── hooks/         # Custom hooks (WebSocket)
-│   │   ├── stores/        # Zustand state
-│   │   ├── utils/         # Colors, glass, responsive
-│   │   └── types/         # TypeScript types
-│   └── dist/          # Built frontend (served by backend)
-├── docs/              # Specification documents
-├── Dockerfile         # Production container
-└── docker-compose.yml # Local development
+│   │   ├── components/   # React components
+│   │   ├── hooks/        # Custom hooks (WebSocket)
+│   │   ├── stores/       # Zustand state
+│   │   ├── utils/        # Colors, glass, responsive
+│   │   └── types/        # TypeScript types
+│   └── dist/             # Built frontend (served by backend)
+├── docs/                 # Specification documents
+│   ├── API.md            # API documentation
+│   ├── PROJECT.md        # Project overview
+│   └── DATA-SOURCES.md   # Data source details
+├── Dockerfile            # Production container
+└── docker-compose.yml    # Local development
 ```
 
 ---
@@ -231,4 +274,6 @@ MIT
 - NOAA Space Weather Prediction Center
 - NASA CCMC (DONKI) + EONET
 - Open-Meteo
+- NOAA SWPC (Geomagnetic, Ionospheric, Ocean Indices)
+- WWLLN (Lightning)
 - globe.gl / three-globe
