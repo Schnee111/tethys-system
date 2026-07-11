@@ -3,15 +3,31 @@ import asyncio
 import aiohttp
 from datetime import datetime, timezone
 from backend.db.connection import get_pool
+from backend.collectors.base import BaseCollector
 
-class TsunamiWarningCollector:
+class TsunamiWarningCollector(BaseCollector):
     def __init__(self, pool):
-        self.pool = pool
+        super().__init__(pool)
         self.name = "tsunami_warning"
-        self.interval = 300  # 5 minutes
+        self.poll_interval = 300  # 5 minutes
         self.endpoint = "https://api.weather.gov/alerts?message_type=alert&event=Tsunami%20Warning"
+        self.insert_query = """
+            INSERT INTO tsunami_warnings (
+                event_id, event_type, alert_level, headline,
+                description, instruction, area_desc,
+                effective, expires, sender_name, parameters,
+                created_at
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+            ON CONFLICT (event_id) DO UPDATE SET
+                alert_level = EXCLUDED.alert_level,
+                headline = EXCLUDED.headline,
+                description = EXCLUDED.description,
+                instruction = EXCLUDED.instruction,
+                expires = EXCLUDED.expires,
+                updated_at = NOW()
+        """
         
-    async def fetch_data(self):
+    async def collect(self):
         """Fetch tsunami warnings from NWS"""
         try:
             timeout = aiohttp.ClientTimeout(total=30)
@@ -22,13 +38,14 @@ class TsunamiWarningCollector:
             async with aiohttp.ClientSession(timeout=timeout) as session:
                 async with session.get(self.endpoint, headers=headers) as response:
                     if response.status == 200:
-                        return await response.json()
+                        data = await response.json()
+                        return self.parse_json(data)
                     else:
                         print(f"Tsunami warning fetch failed: {response.status}")
-                        return None
+                        return []
         except Exception as e:
             print(f"Tsunami warning error: {e}")
-            return None
+            return []
     
     def parse_json(self, data):
         """Parse NWS alerts JSON"""
@@ -59,7 +76,8 @@ class TsunamiWarningCollector:
                     'sender_name': properties.get('senderName', ''),
                     'latitude': lat,
                     'longitude': lon,
-                    'parameters': {}
+                    'parameters': {},
+                    'time': datetime.now(timezone.utc)
                 }
                 
                 warnings.append(warning)
@@ -69,78 +87,19 @@ class TsunamiWarningCollector:
             
         return warnings
     
-    async def save_to_db(self, warnings):
-        """Save warnings to database"""
-        pool = await get_pool()
-        
-        for warning in warnings:
-            try:
-                await pool.execute('''
-                    INSERT INTO tsunami_warnings (
-                        event_id, event_type, alert_level, headline,
-                        description, instruction, area_desc,
-                        effective, expires, sender_name, parameters,
-                        created_at
-                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-                    ON CONFLICT (event_id) DO UPDATE SET
-                        alert_level = EXCLUDED.alert_level,
-                        headline = EXCLUDED.headline,
-                        description = EXCLUDED.description,
-                        instruction = EXCLUDED.instruction,
-                        expires = EXCLUDED.expires,
-                        updated_at = NOW()
-                ''',
-                    warning['event_id'],
-                    warning['event_type'],
-                    warning['alert_level'],
-                    warning['headline'],
-                    warning['description'],
-                    warning['instruction'],
-                    warning['area_desc'],
-                    warning['effective'] if warning['effective'] else None,
-                    warning['expires'] if warning['expires'] else None,
-                    warning['sender_name'],
-                    warning['parameters'],
-                    datetime.now(timezone.utc)
-                )
-            except Exception as e:
-                print(f"DB save error: {e}")
-        
-        await pool.close()
-    
-    async def run(self):
-        """Main collector loop"""
-        print(f"Starting {self.name} collector...")
-        
-        while True:
-            try:
-                json_data = await self.fetch_data()
-                
-                if json_data:
-                    warnings = self.parse_json(json_data)
-                    print(f"Fetched {len(warnings)} tsunami warnings")
-                    
-                    if warnings:
-                        await self.save_to_db(warnings)
-                        print(f"Saved {len(warnings)} warnings to database")
-                
-                await asyncio.sleep(self.interval)
-                
-            except Exception as e:
-                print(f"Collector error: {e}")
-                await asyncio.sleep(self.interval)
-
-if __name__ == "__main__":
-    import sys
-    sys.path.insert(0, '/mnt/d/Project/tethys')
-    from backend.db.connection import get_pool
-    
-    async def main():
-        pool = await get_pool()
-        collector = TsunamiWarningCollector(pool)
-        try:
-            await collector.run()
-        finally:
-            await pool.close()
-    
-    asyncio.run(main())
+    def format_record(self, record):
+        """Convert record dict to tuple for database insertion"""
+        return (
+            record['event_id'],
+            record['event_type'],
+            record['alert_level'],
+            record['headline'],
+            record['description'],
+            record['instruction'],
+            record['area_desc'],
+            record['effective'] if record['effective'] else None,
+            record['expires'] if record['expires'] else None,
+            record['sender_name'],
+            record['parameters'],
+            record['time']
+        )
