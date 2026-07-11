@@ -223,6 +223,16 @@ CREATE TABLE IF NOT EXISTS radon_data (
     moisture DOUBLE PRECISION,  -- soil moisture percentage
     PRIMARY KEY (time, station)
 );
+
+-- Ionospheric Total Electron Content (LAIC theory)
+CREATE TABLE IF NOT EXISTS ionospheric_data (
+    time TIMESTAMPTZ NOT NULL,
+    latitude DOUBLE PRECISION NOT NULL,
+    longitude DOUBLE PRECISION NOT NULL,
+    tec_value DOUBLE PRECISION NOT NULL,  -- TECU (10^16 electrons/m²)
+    rms_error DOUBLE PRECISION,
+    PRIMARY KEY (time, latitude, longitude)
+);
 """
 
 HYPERTABLES_SQL = """
@@ -241,6 +251,7 @@ SELECT create_hypertable('activity_assessments', 'time', if_not_exists => TRUE);
 SELECT create_hypertable('geomagnetic_indices', 'time', if_not_exists => TRUE);
 SELECT create_hypertable('cosmic_ray_data', 'time', if_not_exists => TRUE);
 SELECT create_hypertable('radon_data', 'time', if_not_exists => TRUE);
+SELECT create_hypertable('ionospheric_data', 'time', if_not_exists => TRUE);
 """
 
 INDEXES_SQL = """
@@ -256,6 +267,7 @@ CREATE INDEX IF NOT EXISTS idx_atmospheric_coords ON atmospheric_data (latitude,
 CREATE INDEX IF NOT EXISTS idx_anomalies_domain ON anomalies (domain, time DESC);
 CREATE INDEX IF NOT EXISTS idx_anomalies_severity ON anomalies (severity, time DESC);
 CREATE INDEX IF NOT EXISTS idx_correlations_significant ON correlations (is_significant, time DESC);
+CREATE INDEX IF NOT EXISTS idx_ionospheric_location ON ionospheric_data (latitude, longitude, time DESC);
 """
 
 CONTINUOUS_AGGREGATES_SQL = """

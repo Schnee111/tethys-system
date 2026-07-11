@@ -19,12 +19,14 @@ from backend.api.routes.websocket import broadcast_event, websocket_heartbeat
 from backend.api.routes.websocket import router as ws_router
 from backend.collectors.atmospheric import AtmosphericCollector
 from backend.collectors.base import set_broadcast_callback
+from backend.collectors.cosmic_ray import CosmicRayCollector
 from backend.collectors.donki import DONKICollector
 from backend.collectors.goes_flux import GOESFluxCollector
+from backend.collectors.geomagnetic import GeomagneticCollector
+from backend.collectors.ionospheric import IonosphericCollector
 from backend.collectors.seismic import SeismicCollector
 from backend.collectors.solar_wind import SolarWindCollector
 from backend.collectors.volcanic import VolcanicCollector
-from backend.collectors.geomagnetic import GeomagneticCollector
 from backend.collectors.cosmic_ray import CosmicRayCollector
 from backend.config import DATABASE_URL, TETHYS_ENV
 from backend.db.connection import close_pool, get_pool, init_pool
@@ -73,6 +75,7 @@ async def lifespan(app: FastAPI):
         VolcanicCollector(pool),
         GeomagneticCollector(pool),
         CosmicRayCollector(pool),
+        IonosphericCollector(pool),
     ]
     collector_tasks = [asyncio.create_task(c.run()) for c in collectors]
     logger.info(f"Started {len(collectors)} collectors in API server process")
