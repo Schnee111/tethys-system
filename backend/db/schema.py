@@ -230,7 +230,10 @@ CREATE TABLE IF NOT EXISTS ionospheric_data (
     latitude DOUBLE PRECISION NOT NULL,
     longitude DOUBLE PRECISION NOT NULL,
     tec_value DOUBLE PRECISION NOT NULL,  -- TECU (10^16 electrons/m²)
-    rms_error DOUBLE PRECISION,
+    anomaly DOUBLE PRECISION,  -- TEC anomaly
+    hmF2 DOUBLE PRECISION,  -- Peak height (km)
+    NmF2 DOUBLE PRECISION,  -- Peak density (electrons/m³)
+    quality_flag INTEGER DEFAULT 0,
     PRIMARY KEY (time, latitude, longitude)
 );
 
