@@ -256,6 +256,16 @@ CREATE TABLE IF NOT EXISTS ocean_indices (
     classification TEXT,  -- 'el_nino', 'la_nina', 'neutral'
     PRIMARY KEY (time, index_type)
 );
+
+-- Gravity field data (NASA GRACE-FO)
+CREATE TABLE IF NOT EXISTS gravity_field (
+    time TIMESTAMPTZ NOT NULL,
+    latitude DOUBLE PRECISION NOT NULL,
+    longitude DOUBLE PRECISION NOT NULL,
+    lwe_thickness DOUBLE PRECISION,  -- Liquid water equivalent thickness (cm)
+    uncertainty DOUBLE PRECISION,
+    PRIMARY KEY (time, latitude, longitude)
+);
 """
 
 HYPERTABLES_SQL = """
@@ -277,6 +287,7 @@ SELECT create_hypertable('radon_data', 'time', if_not_exists => TRUE);
 SELECT create_hypertable('ionospheric_data', 'time', if_not_exists => TRUE);
 SELECT create_hypertable('lightning_data', 'time', if_not_exists => TRUE);
 SELECT create_hypertable('ocean_indices', 'time', if_not_exists => TRUE);
+SELECT create_hypertable('gravity_field', 'time', if_not_exists => TRUE);
 """
 
 INDEXES_SQL = """
