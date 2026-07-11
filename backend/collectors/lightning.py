@@ -44,13 +44,10 @@ class LightningCollector(BaseCollector):
             end_time = datetime.now(UTC)
             start_time = end_time - timedelta(minutes=5)
 
-            params = {
-                "start": start_time.isoformat(),
-                "end": end_time.isoformat(),
-                "format": "json"
-            }
+            # Build URL with query parameters
+            url = f"{self.endpoint}?start={start_time.isoformat()}&end={end_time.isoformat()}&format=json"
 
-            data = await self.fetch_json(self.endpoint, params=params)
+            data = await self.fetch_json(url)
             if isinstance(data, dict) and "strikes" in data:
                 records = self._aggregate_strikes(data["strikes"])
                 all_records.extend(records)
