@@ -233,6 +233,16 @@ CREATE TABLE IF NOT EXISTS ionospheric_data (
     rms_error DOUBLE PRECISION,
     PRIMARY KEY (time, latitude, longitude)
 );
+
+-- Lightning strike data (WWLLN)
+CREATE TABLE IF NOT EXISTS lightning_data (
+    time TIMESTAMPTZ NOT NULL,
+    latitude DOUBLE PRECISION NOT NULL,
+    longitude DOUBLE PRECISION NOT NULL,
+    energy DOUBLE PRECISION,
+    stroke_count INTEGER DEFAULT 1,
+    PRIMARY KEY (time, latitude, longitude)
+);
 """
 
 HYPERTABLES_SQL = """
@@ -252,6 +262,7 @@ SELECT create_hypertable('geomagnetic_indices', 'time', if_not_exists => TRUE);
 SELECT create_hypertable('cosmic_ray_data', 'time', if_not_exists => TRUE);
 SELECT create_hypertable('radon_data', 'time', if_not_exists => TRUE);
 SELECT create_hypertable('ionospheric_data', 'time', if_not_exists => TRUE);
+SELECT create_hypertable('lightning_data', 'time', if_not_exists => TRUE);
 """
 
 INDEXES_SQL = """
