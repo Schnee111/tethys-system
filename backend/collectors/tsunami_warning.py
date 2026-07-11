@@ -5,7 +5,8 @@ from datetime import datetime, timezone
 from backend.db.connection import get_pool
 
 class TsunamiWarningCollector:
-    def __init__(self):
+    def __init__(self, pool):
+        self.pool = pool
         self.name = "tsunami_warning"
         self.interval = 300  # 5 minutes
         self.endpoint = "https://api.weather.gov/alerts?message_type=alert&event=Tsunami%20Warning"
@@ -130,5 +131,16 @@ class TsunamiWarningCollector:
                 await asyncio.sleep(self.interval)
 
 if __name__ == "__main__":
-    collector = TsunamiWarningCollector()
-    asyncio.run(collector.run())
+    import sys
+    sys.path.insert(0, '/mnt/d/Project/tethys')
+    from backend.db.connection import get_pool
+    
+    async def main():
+        pool = await get_pool()
+        collector = TsunamiWarningCollector(pool)
+        try:
+            await collector.run()
+        finally:
+            await pool.close()
+    
+    asyncio.run(main())
