@@ -246,6 +246,16 @@ CREATE TABLE IF NOT EXISTS lightning_data (
     stroke_count INTEGER DEFAULT 1,
     PRIMARY KEY (time, latitude, longitude)
 );
+
+-- Ocean climate indices (ENSO, NAO, etc.)
+CREATE TABLE IF NOT EXISTS ocean_indices (
+    time TIMESTAMPTZ NOT NULL,
+    index_type TEXT NOT NULL,  -- 'enso', 'nao', etc.
+    value DOUBLE PRECISION NOT NULL,
+    anomaly DOUBLE PRECISION,
+    classification TEXT,  -- 'el_nino', 'la_nina', 'neutral'
+    PRIMARY KEY (time, index_type)
+);
 """
 
 HYPERTABLES_SQL = """
@@ -266,6 +276,7 @@ SELECT create_hypertable('cosmic_ray_data', 'time', if_not_exists => TRUE);
 SELECT create_hypertable('radon_data', 'time', if_not_exists => TRUE);
 SELECT create_hypertable('ionospheric_data', 'time', if_not_exists => TRUE);
 SELECT create_hypertable('lightning_data', 'time', if_not_exists => TRUE);
+SELECT create_hypertable('ocean_indices', 'time', if_not_exists => TRUE);
 """
 
 INDEXES_SQL = """
