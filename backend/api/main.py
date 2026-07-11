@@ -28,7 +28,6 @@ from backend.collectors.lightning import LightningCollector
 from backend.collectors.ocean_indices import OceanIndicesCollector
 from backend.collectors.seismic import SeismicCollector
 from backend.collectors.solar_wind import SolarWindCollector
-from backend.collectors.tidal import TidalCollector
 from backend.collectors.tsunami_warning import TsunamiWarningCollector
 from backend.collectors.volcanic import VolcanicCollector
 from backend.config import DATABASE_URL, TETHYS_ENV
@@ -81,7 +80,6 @@ async def lifespan(app: FastAPI):
         IonosphericCollector(pool),
         LightningCollector(pool),
         OceanIndicesCollector(pool),
-        TidalCollector(pool),
         TsunamiWarningCollector(pool),
     ]
     collector_tasks = [asyncio.create_task(c.run()) for c in collectors]
