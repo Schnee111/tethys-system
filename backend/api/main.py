@@ -29,9 +29,9 @@ from backend.collectors.lightning import LightningCollector
 from backend.collectors.ocean_indices import OceanIndicesCollector
 from backend.collectors.seismic import SeismicCollector
 from backend.collectors.solar_wind import SolarWindCollector
-from backend.collectors.tidal import TidalCollector
 from backend.collectors.tsunami_warning import TsunamiWarningCollector
 from backend.collectors.volcanic import VolcanicCollector
+from backend.config import DATABASE_URL, TETHYS_ENV
 from backend.db.connection import close_pool, get_pool, init_pool
 from backend.db.schema import create_tables
 
