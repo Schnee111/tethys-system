@@ -39,3 +39,4 @@ jobs:
             git pull origin main
             cd frontend && npm ci && npm run build && cd ..
             sudo docker compose -f docker-compose.prod.yml up -d --build
+            sudo rsync -av --delete ~/Storage/Projects/tethys/frontend/dist/ /var/www/tethys/

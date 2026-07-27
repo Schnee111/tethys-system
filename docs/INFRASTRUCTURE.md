@@ -264,6 +264,9 @@ sudo systemctl daemon-reload
 sudo systemctl enable tethys-collector
 sudo systemctl start tethys-collector
 sudo systemctl status tethys-collector
+
+# Sync build to serving root
+sudo rsync -av --delete /home/ubuntu/Storage/Projects/tethys/frontend/dist/ /var/www/tethys/
 ```
 
 ### Nginx Configuration (Phase 5)
