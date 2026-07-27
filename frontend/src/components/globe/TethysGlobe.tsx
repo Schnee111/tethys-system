@@ -319,6 +319,7 @@ export function TethysGlobe() {
   const { events } = useDataStore();
   const { activeCategories, minMagnitude, maxMagnitude, selectedEvent, setSelectedEvent, setAltitude } = useGlobeStore();
   const [hoverInfo, setHoverInfo] = useState<any>(null);
+  const [layersReady, setLayersReady] = useState(false);
   const layersAdded = useRef(false);
   const flyingRef = useRef(false);
 
@@ -350,6 +351,7 @@ export function TethysGlobe() {
       for (const k of ['halo','cluster','count','point','pulse','selected']) {
         try { map.addLayer(LAYERS[k]); } catch(_) {}
       }
+      setLayersReady(true);
 
       const c = map.getContainer().querySelector('.maplibregl-ctrl-attrib') as HTMLElement;
       if (c) c.style.display = 'none';
@@ -522,6 +524,7 @@ export function TethysGlobe() {
   }, []);
 
   useEffect(() => {
+    if (!layersReady) return;
     const map = mapRef.current; if (!map || !map.isStyleLoaded()) return;
     const src = map.getSource('events') as maplibregl.GeoJSONSource; if (!src) return;
     const cutoff = Date.now() - 24*60*60*1000;
@@ -530,7 +533,7 @@ export function TethysGlobe() {
       if (e.magnitude != null && (e.magnitude < minMagnitude || e.magnitude > maxMagnitude)) return false;
       return new Date(e.time).getTime() >= cutoff;
     })));
-  }, [events, activeCategories, minMagnitude, maxMagnitude]);
+  }, [layersReady, events, activeCategories, minMagnitude, maxMagnitude]);
 
   useEffect(() => {
     const map = mapRef.current; if (!map || !map.isStyleLoaded()) return;
