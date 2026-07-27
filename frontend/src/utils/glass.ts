@@ -1,6 +1,11 @@
 import { useMemo } from 'react';
 import { useGlobeStore } from '../stores/globeStore';
 
+// MapLibre's normalized altitude is ~0.091 at the initial zoom (2.5).
+// Keep panels white longer, then crossfade only when approaching terrain.
+const TERRAIN_ALTITUDE = 0.018;
+const SPACE_ALTITUDE = 0.055;
+
 /**
  * Dynamic glass — smooth crossfade between white and black.
  * Far (space/dark bg)   → white glass (visible)
@@ -10,7 +15,10 @@ export function useGlassStyle() {
   const altitude = useGlobeStore(s => s.altitude);
 
   return useMemo(() => {
-    const t = Math.max(0, Math.min(1, (altitude - 0.4) / 1.1));
+    const t = Math.max(0, Math.min(
+      1,
+      (altitude - TERRAIN_ALTITUDE) / (SPACE_ALTITUDE - TERRAIN_ALTITUDE),
+    ));
     const blackOpacity = (1 - t) * 0.45;
     const whiteOpacity = t * 0.06;
 
