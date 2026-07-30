@@ -138,6 +138,11 @@ async def _get_recent_events(pool, hours: int = 24) -> dict:
     interval = timedelta(hours=hours)
 
     queries = {
+        "atmospheric": (
+            "SELECT * FROM atmospheric_data "
+            "WHERE time > NOW() - $1::interval "
+            "ORDER BY time DESC LIMIT 500"
+        ),
         "seismic": (
             "SELECT * FROM seismic_events "
             "WHERE time > NOW() - $1::interval "

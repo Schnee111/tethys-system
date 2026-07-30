@@ -11,6 +11,17 @@ services:
       POSTGRES_USER: tethys
       POSTGRES_PASSWORD: ${DB_PASSWORD:-tethys_prod}
       POSTGRES_DB: tethys
+    # VPS 3.6G: default autotune ~900MB shared_buffers too fat
+    command:
+      - postgres
+      - -c
+      - shared_buffers=256MB
+      - -c
+      - work_mem=4MB
+      - -c
+      - effective_cache_size=1GB
+      - -c
+      - maintenance_work_mem=64MB
     volumes:
       - tethys-prod-data:/var/lib/postgresql/data
       - ./backend/db/init.sql:/docker-entrypoint-initdb.d/init.sql
