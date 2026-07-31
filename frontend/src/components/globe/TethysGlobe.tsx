@@ -363,26 +363,44 @@ export function TethysGlobe() {
 
     function addLayers() {
       if (layersAdded.current) return;
-      layersAdded.current = true;
 
-      // Add starfield as FIRST layer — behind everything
+      // Add starfield as FIRST layer — behind everything.
+      // NOTE: getStyle() can be null before the style finishes loading; guard
+      // it so a failure here can't abort the rest (layersAdded is only set at
+      // the END, so a failed attempt retries on the next load/1500ms tick).
       try {
-        const firstLayer = map.getStyle().layers?.[0]?.id;
+        const firstLayer = map.getStyle()?.layers?.[0]?.id;
         map.addLayer(createStarfieldLayer(), firstLayer);
       } catch (e) { console.warn('[Starfield] addLayer failed:', e); }
 
-      map.addSource('events', { type:'geojson', data:{ type:'FeatureCollection', features:[] }, cluster:true, clusterMaxZoom:8, clusterRadius:50, maxzoom:10 });
-      map.addSource('selected', { type:'geojson', data:{ type:'FeatureCollection', features:[] } });
-      for (const k of ['halo','cluster','count','point','pulse','selected']) {
-        try { map.addLayer(LAYERS[k]); } catch(_) {}
-      }
-      setLayersReady(true);
+      try {
+        map.addSource('events', { type:'geojson', data:{ type:'FeatureCollection', features:[] }, cluster:true, clusterMaxZoom:8, clusterRadius:50, maxzoom:10 });
+        map.addSource('selected', { type:'geojson', data:{ type:'FeatureCollection', features:[] } });
+        for (const k of ['halo','cluster','count','point','pulse','selected']) {
+          try { map.addLayer(LAYERS[k]); } catch(_) {}
+        }
+        setLayersReady(true);
 
-      const c = map.getContainer().querySelector('.maplibregl-ctrl-attrib') as HTMLElement;
-      if (c) c.style.display = 'none';
+        const c = map.getContainer().querySelector('.maplibregl-ctrl-attrib') as HTMLElement;
+        if (c) c.style.display = 'none';
+        // Only mark done after everything succeeded — a throw above leaves
+        // layersAdded false so the next load/1500ms tick retries.
+        layersAdded.current = true;
+      } catch (e) {
+        console.warn('[Layers] addLayers failed, will retry:', e);
+      }
     }
 
     map.on('load', () => { addLayers(); });
+    // Retry until layers exist. Don't wait for map 'load' — with slow/unreachable
+    // satellite tiles, style.loaded() can stay false for a long time, which means
+    // 'load' never fires and the events/selected sources are never created
+    // (breaking marker selection entirely). getStyle() becomes available as soon
+    // as the style object exists, which is enough to addSource/addLayer.
+    const layersRetry = setInterval(() => {
+      if (layersAdded.current) { clearInterval(layersRetry); return; }
+      if (map.getStyle()) addLayers();
+    }, 500);
     setTimeout(() => { addLayers(); }, 1500);
 
     // Dynamic pitch tilt — 3D perspective when zoomed close to ground.
@@ -582,12 +600,14 @@ export function TethysGlobe() {
         userInteracting,
         isZooming,
         autoRotating,
+        selectedEventId: useGlobeStore.getState().selectedEvent?.event_id ?? null,
       });
     }
     return () => {
       cancelAnimationFrame(rafId);
       clearTimeout(zoomTimeout);
       clearTimeout(interactionEndTimeout);
+      clearInterval(layersRetry);
       map.remove(); mapRef.current = null;
     };
   }, []);
@@ -605,7 +625,12 @@ export function TethysGlobe() {
   }, [layersReady, events, activeCategories, minMagnitude, maxMagnitude]);
 
   useEffect(() => {
-    const map = mapRef.current; if (!map || !map.isStyleLoaded()) return;
+    const map = mapRef.current; if (!map) return;
+    // NOTE: no isStyleLoaded() guard — satellite tiles streaming on a globe
+    // keep it false for long stretches; returning early here silently skips
+    // the flyTo, leaving the camera stuck while the marker is already
+    // selected (the "marker race" users saw: select/close/zoom leaving the
+    // camera frozen). getSource/flyTo are safe before full style load.
     const src = map.getSource('selected') as maplibregl.GeoJSONSource; if (!src) return;
     src.setData(selGeoJSON(selectedEvent));
 
