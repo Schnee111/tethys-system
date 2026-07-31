@@ -18,6 +18,45 @@ DST_ENDPOINT = "https://services.swpc.noaa.gov/products/kyoto-dst.json"
 AE_ENDPOINT = "https://services.swpc.noaa.gov/products/planetary_a_index.json"
 
 
+def _classify_kp(kp: float) -> str:
+    """Map a Kp index to its NOAA G-scale storm level.
+
+    Kp 0-2: quiet, 3: unsettled, 4: active, then G-scale storm levels
+    (NOAA space weather scales).
+    """
+    if kp >= 9:
+        return "G5_extreme"
+    if kp >= 8:
+        return "G4_severe"
+    if kp >= 7:
+        return "G3_strong"
+    if kp >= 6:
+        return "G2_moderate"
+    if kp >= 5:
+        return "G1_minor"
+    if kp >= 4:
+        return "active"
+    if kp >= 3:
+        return "unsettled"
+    return "quiet"
+
+
+def _classify_dst(dst: float) -> str:
+    """Map a Dst index (nT) to its geomagnetic storm level.
+
+    Dst is negative during storms; more negative = stronger storm.
+    """
+    if dst <= -250:
+        return "super_storm"
+    if dst <= -100:
+        return "intense_storm"
+    if dst <= -50:
+        return "moderate_storm"
+    if dst <= -30:
+        return "weak_storm"
+    return "quiet"
+
+
 class GeomagneticCollector(BaseCollector):
     """Collects geomagnetic indices (Kp, Dst, AE) from NOAA SWPC."""
 
