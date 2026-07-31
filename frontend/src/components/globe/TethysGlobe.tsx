@@ -338,11 +338,6 @@ export function TethysGlobe() {
   // (the race that froze the active marker / tilt state during zoom).
   const flyTokenRef = useRef(0);
   const flyActiveRef = useRef(false);
-  // True once the user has ever selected an event. The selectedEvent effect
-  // must NOT fly the camera on initial mount (selectedEvent starts null) —
-  // flying to the exact same position never fires moveend, which would leave
-  // flyActiveRef stuck true and freeze the pitch lerp loop.
-  const hasSelectedBeforeRef = useRef(false);
   // Single source of truth for the desired pitch. Updated everywhere the
   // camera intent changes (zoom, flyTo) so the lerp loop and flyTo never
   // fight over two different pitch values.
@@ -395,15 +390,8 @@ export function TethysGlobe() {
       pitchTargetRef.current = getTargetPitch(z);
       const token = ++flyTokenRef.current;
       flyActiveRef.current = true;
-      // Safety net: flyTo to the current position never fires moveend; force-clear.
-      const fallback = setTimeout(() => {
-        if (token === flyTokenRef.current) flyActiveRef.current = false;
-      }, 1700);
       map.flyTo({ center: f.geometry.coordinates, zoom: z, duration: 1500 });
-      map.once('moveend', () => {
-        clearTimeout(fallback);
-        if (token === flyTokenRef.current) flyActiveRef.current = false;
-      });
+      map.once('moveend', () => { if (token === flyTokenRef.current) flyActiveRef.current = false; });
     });
     map.on('click', 'unclustered-point', (e:any) => {
       const f = e.features?.[0]; if (!f) return;
@@ -499,38 +487,8 @@ export function TethysGlobe() {
       zoomTimeout = setTimeout(() => { isZooming = false; userInteracting = false; }, 300);
     });
 
-    // Pitch tracking + smoothing. Shared by the rAF loop and the 'move' event.
-    // NOTE: must NOT call jumpTo/easeTo/setPitch (map methods) — they call
-    // stop() which resets ScrollZoomHandler and kills scroll-zoom animation.
-    // Setting transform.pitch directly is what jumpTo does internally.
-    const stepPitch = (m: maplibregl.Map, z: number) => {
-      // Track zoom intent when idle (no explicit fly target). During a flyTo
-      // the target was pinned by the flight, so a stale zoom read can't
-      // override it mid-flight.
-      if (!flyActiveRef.current) {
-        pitchTargetRef.current = getTargetPitch(z);
-      }
-      const targetPitch = pitchTargetRef.current;
-      const currentPitch = m.getPitch();
-      if (Math.abs(targetPitch - currentPitch) > 0.5) {
-        // 0.35/frame — tracks zoom during a scroll while remaining visibly
-        // smooth (each step closes 65% of the remaining gap; ~6 steps to
-        // settle). Lower values felt like "tilt waits for scroll to finish".
-        const newPitch = currentPitch + (targetPitch - currentPitch) * 0.35;
-        (m as any).transform.setPitch(newPitch);
-        m.triggerRepaint();
-      }
-    };
-    // 'move' fires on every camera change (scroll-zoom included) — this is the
-    // reliable tick for tilt tracking; rAF alone can miss frames during scroll.
-    map.on('move', () => { stepPitch(map, map.getZoom()); });
-
-    let rafId = 0;
     const autoRotate = () => {
-      // NOTE: no isStyleLoaded() guard here — it can stay false for long
-      // stretches (satellite tiles streaming on a globe never fully settle),
-      // which would starve the pitch lerp. getZoom/getPitch/transform are
-      // safe to read before the style is fully loaded.
+      if (!map.isStyleLoaded()) { requestAnimationFrame(autoRotate); return; }
 
       const now = performance.now();
       const dt = (now - lastFrame) / 16.67;
@@ -554,17 +512,32 @@ export function TethysGlobe() {
         map.triggerRepaint();
       }
 
-      // Dynamic pitch — track zoom intent + lerp toward target.
-      // Runs from BOTH the rAF loop (idle smoothing) and the map 'move' event
-      // (fires every frame during scroll-zoom, which rAF alone can miss).
       // Dynamic pitch — track zoom intent when idle (no explicit fly target).
       // During a flyTo the target was already pinned by the flight (pitchTargetRef),
       // so a stale zoom read here can't override it mid-flight.
-      stepPitch(map, zoom);
+      if (!flyActiveRef.current) {
+        pitchTargetRef.current = getTargetPitch(zoom);
+      }
 
-      rafId = requestAnimationFrame(autoRotate);
+      // Pitch tilt — lerp each frame for smooth interpolation.
+      // IMPORTANT: must NOT call jumpTo/easeTo/setPitch — they all call stop() which
+      // resets ScrollZoomHandler and kills scroll-zoom animation (MapLibre source line 69320).
+      // Instead, set transform.pitch directly (same as jumpTo internally does).
+      // Runs unconditionally — including mid-flight — so tilt transitions are smooth
+      // and a flyTo with a pinned pitch target never fights the lerp loop.
+      {
+        const targetPitch = pitchTargetRef.current;
+        const currentPitch = map.getPitch();
+        if (Math.abs(targetPitch - currentPitch) > 0.5) {
+          const newPitch = currentPitch + (targetPitch - currentPitch) * 0.08;
+          (map as any).transform.setPitch(newPitch);
+          map.triggerRepaint();
+        }
+      }
+
+      requestAnimationFrame(autoRotate);
     };
-    rafId = requestAnimationFrame(autoRotate);
+    requestAnimationFrame(autoRotate);
 
     mapRef.current = map;
     // Dev-only debug handle — lets Playwright/browser-console drive & probe the
@@ -572,20 +545,8 @@ export function TethysGlobe() {
     // builds (import.meta.env.DEV is statically replaced by Vite).
     if (import.meta.env.DEV) {
       (window as any).__map = map;
-      // Temporary debug probe for diagnosing the pitch-lerp freeze.
-      (window as any).__dbg = () => ({
-        flyActive: flyActiveRef.current,
-        flyToken: flyTokenRef.current,
-        pitchTarget: pitchTargetRef.current,
-        currentPitch: map.getPitch(),
-        zoom: map.getZoom(),
-        userInteracting,
-        isZooming,
-        autoRotating,
-      });
     }
     return () => {
-      cancelAnimationFrame(rafId);
       clearTimeout(zoomTimeout);
       clearTimeout(interactionEndTimeout);
       map.remove(); mapRef.current = null;
@@ -608,21 +569,8 @@ export function TethysGlobe() {
     const map = mapRef.current; if (!map || !map.isStyleLoaded()) return;
     const src = map.getSource('selected') as maplibregl.GeoJSONSource; if (!src) return;
     src.setData(selGeoJSON(selectedEvent));
-
-    // Initial mount (selectedEvent starts null): do NOT fly — flying to the
-    // current position never fires moveend, which would leave flyActiveRef
-    // stuck true and freeze the pitch lerp loop forever.
-    if (!selectedEvent && !hasSelectedBeforeRef.current) return;
-
-    hasSelectedBeforeRef.current = true;
     const token = ++flyTokenRef.current;
     flyActiveRef.current = true;
-    // Safety net: if flyTo targets the current position, moveend never fires
-    // and flyActiveRef would stay true. Force-clear after the flight duration.
-    const fallback = setTimeout(() => {
-      if (token === flyTokenRef.current) flyActiveRef.current = false;
-    }, 2200);
-
     if (selectedEvent) {
       // Pin pitch target so the lerp loop eases toward the selected event's
       // pitch (single source of truth — no more hardcoded pitch: 35 fighting
@@ -632,18 +580,12 @@ export function TethysGlobe() {
         center:[selectedEvent.longitude, selectedEvent.latitude],
         zoom:6, duration:2000,
       });
-      map.once('moveend', () => {
-        clearTimeout(fallback);
-        if (token === flyTokenRef.current) flyActiveRef.current = false;
-      });
+      map.once('moveend', () => { if (token === flyTokenRef.current) flyActiveRef.current = false; });
     } else {
       // Return to default view when deselecting
       pitchTargetRef.current = getTargetPitch(2.5);
       map.flyTo({ center:[0, 20], zoom: 2.5, bearing: 0, duration: 2000 });
-      map.once('moveend', () => {
-        clearTimeout(fallback);
-        if (token === flyTokenRef.current) flyActiveRef.current = false;
-      });
+      map.once('moveend', () => { if (token === flyTokenRef.current) flyActiveRef.current = false; });
     }
   }, [selectedEvent]);
 
