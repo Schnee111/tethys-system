@@ -301,6 +301,17 @@ function selGeoJSON(ev: any|null) {
   return { type: 'FeatureCollection' as const, features: [{ type: 'Feature' as const, geometry: { type: 'Point' as const, coordinates: [ev.longitude, ev.latitude] }, properties: { domain: ev.domain, magnitude: ev.magnitude||0 } }] };
 }
 
+// Dynamic pitch target — 3D perspective when zoomed close to ground.
+// Cubic ease-in: very gentle at start, picks up as zoom approaches ground.
+// Starts at zoom 4 (continental → country scale), maxes at zoom 10.
+// Module-level so every effect (zoom lerp, flyTo selection) shares one source.
+function getTargetPitch(zoom: number): number {
+  if (zoom <= 4) return 0;
+  if (zoom >= 10) return 35;
+  const t = (zoom - 4) / 6;
+  return t * t * t * 35; // cubic ease-in — gentle start
+}
+
 // ===================== Layer Defs =====================
 const dc = ['match',['get','domain'],'seismic','#ef4444','volcanic','#f97316','solar_wind','#eab308','goes','#f59e0b','atmospheric','#3b82f6','space_weather','#8b5cf6','#6b7280'];
 const LAYERS: Record<string, any> = {
@@ -321,7 +332,16 @@ export function TethysGlobe() {
   const [hoverInfo, setHoverInfo] = useState<any>(null);
   const [layersReady, setLayersReady] = useState(false);
   const layersAdded = useRef(false);
-  const flyingRef = useRef(false);
+  // Generation token for flyTo animations. Each flyTo increments it; a moveend
+  // listener only clears the flag if its token is still the latest. This
+  // prevents stale moveend handlers from older flights clearing a newer one
+  // (the race that froze the active marker / tilt state during zoom).
+  const flyTokenRef = useRef(0);
+  const flyActiveRef = useRef(false);
+  // Single source of truth for the desired pitch. Updated everywhere the
+  // camera intent changes (zoom, flyTo) so the lerp loop and flyTo never
+  // fight over two different pitch values.
+  const pitchTargetRef = useRef(0);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -360,23 +380,18 @@ export function TethysGlobe() {
     map.on('load', () => { addLayers(); });
     setTimeout(() => { addLayers(); }, 1500);
 
-    // Dynamic pitch tilt — 3D perspective when zoomed close to ground
-    // Cubic ease-in: very gentle at start, picks up as zoom approaches ground.
-    // Starts at zoom 4 (continental → country scale), maxes at zoom 10.
-    const getTargetPitch = (zoom: number): number => {
-      if (zoom <= 4) return 0;
-      if (zoom >= 10) return 35;
-      const t = (zoom - 4) / 6;
-      return t * t * t * 35; // cubic ease-in — gentle start
-    };
+    // Dynamic pitch tilt — 3D perspective when zoomed close to ground.
+    // getTargetPitch is module-level; shared by the lerp loop and all flyTo calls.
 
     map.on('click', 'clusters', async (e:any) => {
       const f = e.features?.[0]; if (!f) return;
       const src = map.getSource('events') as maplibregl.GeoJSONSource;
       const z = await src.getClusterExpansionZoom(f.properties.cluster_id);
-      flyingRef.current = true;
-      map.flyTo({ center: f.geometry.coordinates, zoom: z, pitch: getTargetPitch(z), duration: 1500 });
-      map.once('moveend', () => { flyingRef.current = false; });
+      pitchTargetRef.current = getTargetPitch(z);
+      const token = ++flyTokenRef.current;
+      flyActiveRef.current = true;
+      map.flyTo({ center: f.geometry.coordinates, zoom: z, duration: 1500 });
+      map.once('moveend', () => { if (token === flyTokenRef.current) flyActiveRef.current = false; });
     });
     map.on('click', 'unclustered-point', (e:any) => {
       const f = e.features?.[0]; if (!f) return;
@@ -482,7 +497,7 @@ export function TethysGlobe() {
       const zoom = map.getZoom();
       const hasSelection = !!useGlobeStore.getState().selectedEvent;
 
-      autoRotating = !(zoom > ZOOM_PAUSE_THRESHOLD || hasSelection || userInteracting || flyingRef.current);
+      autoRotating = !(zoom > ZOOM_PAUSE_THRESHOLD || hasSelection || userInteracting || flyActiveRef.current);
 
       if (autoRotating) {
         // Bypass jumpTo → stop() to avoid killing any active drag inertia.
@@ -497,12 +512,21 @@ export function TethysGlobe() {
         map.triggerRepaint();
       }
 
-      // Pitch tilt — lerp each frame for smooth interpolation
+      // Dynamic pitch — track zoom intent when idle (no explicit fly target).
+      // During a flyTo the target was already pinned by the flight (pitchTargetRef),
+      // so a stale zoom read here can't override it mid-flight.
+      if (!flyActiveRef.current) {
+        pitchTargetRef.current = getTargetPitch(zoom);
+      }
+
+      // Pitch tilt — lerp each frame for smooth interpolation.
       // IMPORTANT: must NOT call jumpTo/easeTo/setPitch — they all call stop() which
       // resets ScrollZoomHandler and kills scroll-zoom animation (MapLibre source line 69320).
       // Instead, set transform.pitch directly (same as jumpTo internally does).
-      if (!flyingRef.current && (!userInteracting || isZooming)) {
-        const targetPitch = getTargetPitch(zoom);
+      // Runs unconditionally — including mid-flight — so tilt transitions are smooth
+      // and a flyTo with a pinned pitch target never fights the lerp loop.
+      {
+        const targetPitch = pitchTargetRef.current;
         const currentPitch = map.getPitch();
         if (Math.abs(targetPitch - currentPitch) > 0.5) {
           const newPitch = currentPitch + (targetPitch - currentPitch) * 0.08;
@@ -516,6 +540,12 @@ export function TethysGlobe() {
     requestAnimationFrame(autoRotate);
 
     mapRef.current = map;
+    // Dev-only debug handle — lets Playwright/browser-console drive & probe the
+    // camera for E2E verification of tilt/zoom behavior. Tree-shaken in prod
+    // builds (import.meta.env.DEV is statically replaced by Vite).
+    if (import.meta.env.DEV) {
+      (window as any).__map = map;
+    }
     return () => {
       clearTimeout(zoomTimeout);
       clearTimeout(interactionEndTimeout);
@@ -539,18 +569,23 @@ export function TethysGlobe() {
     const map = mapRef.current; if (!map || !map.isStyleLoaded()) return;
     const src = map.getSource('selected') as maplibregl.GeoJSONSource; if (!src) return;
     src.setData(selGeoJSON(selectedEvent));
+    const token = ++flyTokenRef.current;
+    flyActiveRef.current = true;
     if (selectedEvent) {
-      flyingRef.current = true;
+      // Pin pitch target so the lerp loop eases toward the selected event's
+      // pitch (single source of truth — no more hardcoded pitch: 35 fighting
+      // the zoom-derived target). No pitch in flyTo: lerp handles it smoothly.
+      pitchTargetRef.current = getTargetPitch(6);
       map.flyTo({
         center:[selectedEvent.longitude, selectedEvent.latitude],
-        zoom:6, pitch: 35, duration:2000,
+        zoom:6, duration:2000,
       });
-      map.once('moveend', () => { flyingRef.current = false; });
+      map.once('moveend', () => { if (token === flyTokenRef.current) flyActiveRef.current = false; });
     } else {
       // Return to default view when deselecting
-      flyingRef.current = true;
-      map.flyTo({ center:[0, 20], zoom: 2.5, bearing: 0, pitch: 0, duration: 2000 });
-      map.once('moveend', () => { flyingRef.current = false; });
+      pitchTargetRef.current = getTargetPitch(2.5);
+      map.flyTo({ center:[0, 20], zoom: 2.5, bearing: 0, duration: 2000 });
+      map.once('moveend', () => { if (token === flyTokenRef.current) flyActiveRef.current = false; });
     }
   }, [selectedEvent]);
 
