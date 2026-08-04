@@ -144,7 +144,37 @@ async def generate_narrative(
     domains_affected = activity.get("domains_affected", [])
 
     # Determine narrative type based on state
-    if activity_level in ("high", "intense") and len(domains_affected) >= 2:
+    # Check for lament (cascade) first
+    from backend.analysis.lament_detector import detect_lament
+
+    # Fetch recent anomalies for lament check
+    try:
+        recent_rows = await pool.fetch(
+            """
+            SELECT domain, metric, value, z_score, severity
+            FROM anomalies
+            WHERE time > NOW() - INTERVAL '6 hours'
+            ORDER BY ABS(z_score) DESC
+            LIMIT 20
+            """
+        )
+        recent_anomalies = [dict(r) for r in recent_rows]
+    except Exception:
+        recent_anomalies = []
+
+    lament = None
+    try:
+        lament = await detect_lament(pool, activity, recent_anomalies)
+    except Exception as e:
+        logger.debug(f"Lament detection in narrative skipped: {e}")
+
+    if lament:
+        # Cascade warning with pattern memory
+        narrative_type = "cascade_warning"
+        text = lament["narrative"]
+        severity = "critical" if lament["activity_score"] >= 0.5 else "high"
+
+    elif activity_level in ("high", "intense") and len(domains_affected) >= 2:
         # Cascade warning — multiple domains anomalous
         narrative_type = "cascade_warning"
         template = random.choice(TEMPLATES["cascade_warning"])

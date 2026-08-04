@@ -108,9 +108,29 @@ async def get_narrative():
     """Generate a natural-language description of current planetary state.
 
     Template-based (deterministic). Returns text + metadata.
+    Includes Lament detection (cascade warning with pattern memory).
     """
     from backend.analysis.narrative import generate_narrative
 
     pool = await get_pool()
     result = await generate_narrative(pool)
     return result
+
+
+@router.get("/api/v1/patterns")
+async def get_patterns(limit: int = Query(default=20, ge=1, le=100)):
+    """Query pattern catalog — recurring planetary state patterns."""
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            """
+            SELECT pattern_id, pattern_type, domains_involved, metrics_involved,
+                   description, first_seen, last_seen, occurrence_count,
+                   avg_recurrence_interval_hours
+            FROM pattern_catalog
+            ORDER BY last_seen DESC
+            LIMIT $1
+            """,
+            limit,
+        )
+    return {"count": len(rows), "patterns": [dict(r) for r in rows]}
