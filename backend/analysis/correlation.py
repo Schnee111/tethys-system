@@ -65,6 +65,18 @@ DOMAIN_TABLES = {
     "atmospheric": "atmospheric_daily",
 }
 
+# Table → time column name (raw hypertables use `time`; continuous
+# aggregates rename it to `hour`/`day`)
+TABLE_TIME_COLUMN = {
+    "seismic_events": "time",
+    "solar_wind": "time",
+    "goes_flux": "time",
+    "atmospheric_data": "time",
+    "solar_wind_hourly": "hour",
+    "goes_flux_hourly": "hour",
+    "atmospheric_daily": "day",
+}
+
 
 class CorrelationEngine:
     """Discover cross-domain correlations with lag testing and Granger causality."""
@@ -250,25 +262,29 @@ class CorrelationEngine:
         # Source: Kanamori (1977) — "The energy release in great earthquakes"
         if domain == "seismic" and metric == "event_count":
             select = "SUM(POWER(10, 1.5 * magnitude + 4.8)) AS value"
+        elif metric.startswith("avg_") or metric.startswith("max_"):
+            # Continuous aggregate columns are already aggregated (avg_bz_gsm, etc.)
+            select = f"MAX({metric}) AS value"
         else:
             select = f"AVG({metric}) AS value"
 
         # Force daily bucket for atmospheric_daily as it has no hourly resolution
         actual_bucket = "1 day" if table == "atmospheric_daily" else bucket
+        time_col = TABLE_TIME_COLUMN.get(table, "time")
 
         if lag_hours > 0:
             query = f"""
-                SELECT time_bucket('{actual_bucket}', time) AS bucket, {select}
+                SELECT time_bucket('{actual_bucket}', {time_col}) AS bucket, {select}
                 FROM {table}
-                WHERE time > NOW() - make_interval(hours => $1)
-                  AND time < NOW() - make_interval(hours => $2)
+                WHERE {time_col} > NOW() - make_interval(hours => $1)
+                  AND {time_col} < NOW() - make_interval(hours => $2)
                 GROUP BY bucket ORDER BY bucket
             """
         else:
             query = f"""
-                SELECT time_bucket('{actual_bucket}', time) AS bucket, {select}
+                SELECT time_bucket('{actual_bucket}', {time_col}) AS bucket, {select}
                 FROM {table}
-                WHERE time > NOW() - make_interval(hours => $1)
+                WHERE {time_col} > NOW() - make_interval(hours => $1)
                 GROUP BY bucket ORDER BY bucket
             """
 
