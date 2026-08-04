@@ -69,6 +69,16 @@ export interface Correlation {
   granger_causal: boolean | null;
 }
 
+export interface Narrative {
+  text: string;
+  narrative_type: string;
+  severity: string;
+  timestamp: string;
+  activity_level: string;
+  active_anomalies: number;
+  domains_affected: string[];
+}
+
 export interface SystemStatus {
   status: string;
   version: string;

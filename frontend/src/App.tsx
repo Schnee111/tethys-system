@@ -23,6 +23,7 @@ import { TabBar, type TabKey } from './components/layout/TabBar';
 import { AnomalyFeed } from './components/charts/AnomalyFeed';
 import { ActivityPanel } from './components/charts/ActivityPanel';
 import { CorrelationList } from './components/charts/CorrelationList';
+import { NarrativePanel } from './components/charts/NarrativePanel';
 
 export default function App() {
   const { setStatus, setAnomalies, setActivity, setLoading, anomalies, events, activity } = useDataStore();
@@ -174,8 +175,9 @@ export default function App() {
         {/* ===== INTELLIGENCE TAB ===== */}
         {tab === 'intelligence' && (
           <>
-            {/* Left — activity + anomaly feed */}
+            {/* Left — narrative + activity + anomaly feed */}
             <aside style={{ position: 'absolute', left: 48, top: 144, bottom: 80, width: 360, display: 'flex', flexDirection: 'column', gap: 12, overflowY: 'auto', pointerEvents: 'auto' }}>
+              <NarrativePanel />
               <ActivityPanel activity={activity} />
               <AnomalyFeed anomalies={anomalies} />
             </aside>

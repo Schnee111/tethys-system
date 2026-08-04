@@ -269,6 +269,13 @@ export const api = {
       return { activity_level: "unknown", activity_score: 0 };
     }
   },
+  getNarrative: async () => {
+    try {
+      return await client.get('/api/v1/narrative').then(r => r.data);
+    } catch {
+      return { text: "", narrative_type: "unknown", severity: "low" };
+    }
+  },
   getCorrelations: async (params?: { hours?: number; significant_only?: boolean }) => {
     try {
       const { data } = await client.get('/api/v1/correlations', { params });
