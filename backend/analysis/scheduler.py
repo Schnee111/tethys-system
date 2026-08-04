@@ -19,6 +19,51 @@ from backend.analysis.zscore import ZScoreDetector, store_anomalies
 logger = logging.getLogger(__name__)
 
 
+async def _run_advanced_correlation(pool: asyncpg.Pool, correlator: CorrelationEngine) -> None:
+    """Run advanced correlation methods (Transfer Entropy + Wavelet Coherence).
+
+    These are more expensive than Pearson/Spearman, so run less frequently.
+    Gracefully degrades if dependencies missing or insufficient data.
+    """
+    from backend.analysis.correlation import CORRELATION_PAIRS
+
+    logger.info("Running advanced correlation analysis (TE + Wavelet)...")
+
+    te_results = []
+    wavelet_results = []
+
+    # Use a subset of pairs for advanced analysis (most important ones)
+    # Same pairs as CORRELATION_PAIRS but we could filter to high-priority ones
+    for domain_a, metric_a, domain_b, metric_b, window in CORRELATION_PAIRS:
+        # Transfer Entropy (nonlinear causality)
+        try:
+            te = await correlator.compute_transfer_entropy(
+                pool, domain_a, metric_a, domain_b, metric_b, window
+            )
+            if te:
+                te_results.append(te)
+        except Exception as e:
+            logger.debug(f"TE skipped for {domain_a}/{metric_a} → {domain_b}/{metric_b}: {e}")
+
+        # Wavelet Coherence (time-frequency correlation)
+        try:
+            wc = await correlator.compute_wavelet_coherence(
+                pool, domain_a, metric_a, domain_b, metric_b, window
+            )
+            if wc:
+                wavelet_results.append(wc)
+        except Exception as e:
+            logger.debug(f"Wavelet skipped for {domain_a}/{metric_a} → {domain_b}/{metric_b}: {e}")
+
+    if te_results:
+        logger.info(f"Transfer Entropy: {len(te_results)} pairs analyzed")
+    if wavelet_results:
+        logger.info(f"Wavelet Coherence: {len(wavelet_results)} pairs analyzed")
+
+    # TODO: Store advanced results in DB (add columns to correlations table)
+    # For now, just log. Once data accumulates, we can visualize these.
+
+
 async def run_analysis_cycle(pool: asyncpg.Pool, detector: ZScoreDetector) -> None:
     """Run one anomaly detection + activity assessment cycle."""
     # Detect anomalies
@@ -40,6 +85,7 @@ async def analysis_scheduler(pool: asyncpg.Pool) -> None:
     correlator = CorrelationEngine()
 
     last_correlation_run = 0
+    last_advanced_run = 0  # Transfer Entropy + Wavelet — every 6 hours
 
     logger.info("Analysis scheduler starting...")
 
@@ -57,6 +103,11 @@ async def analysis_scheduler(pool: asyncpg.Pool) -> None:
                     count = await store_correlations(pool, correlations)
                     logger.info(f"Found {count} significant correlations")
                 last_correlation_run = now
+
+            # Advanced correlation (TE + Wavelet) — every 6 hours
+            if now - last_advanced_run >= 21600:
+                await _run_advanced_correlation(pool, correlator)
+                last_advanced_run = now
 
         except Exception as e:
             logger.error(f"Analysis error: {e}")
