@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Wifi, WifiOff, Bell, Settings, User } from 'lucide-react';
 import { useDataStore } from './stores/dataStore';
 import { useGlobeStore } from './stores/globeStore';
@@ -19,10 +19,15 @@ import { UtcClock } from './components/shared/UtcClock';
 import { SeismicChart } from './components/charts/SeismicChart';
 import { SolarWindChart } from './components/charts/SolarWindChart';
 import { GoesChart } from './components/charts/GoesChart';
+import { TabBar, type TabKey } from './components/layout/TabBar';
+import { AnomalyFeed } from './components/charts/AnomalyFeed';
+import { ActivityPanel } from './components/charts/ActivityPanel';
+import { CorrelationList } from './components/charts/CorrelationList';
 
 export default function App() {
-  const { setStatus, setAnomalies, setActivity, setLoading, anomalies, events } = useDataStore();
+  const { setStatus, setAnomalies, setActivity, setLoading, anomalies, events, activity } = useDataStore();
   const GLASS = useGlassStyle();
+  const [tab, setTab] = useState<TabKey>('live');
 
   // WebSocket for real-time events
   const { isConnected, reconnect } = useWebSocket();
@@ -131,30 +136,82 @@ export default function App() {
           </div>
         </div>
 
-        {/* Left panel — charts + monitoring */}
-        <aside style={{ position: 'absolute', left: 48, top: 112, bottom: 80, width: 320, display: 'flex', flexDirection: 'column', gap: 12, overflowY: 'auto', pointerEvents: 'auto' }}>
-          <SeismicChart />
-          <SolarWindChart />
-          <GoesChart />
-          <CollapsibleSection title="Solar Monitoring" defaultOpen={false} summary="Solar Wind · GOES">
-            <SolarWindCard />
-            <GoesCard />
-          </CollapsibleSection>
-          <CollapsibleSection title="Space Alerts" defaultOpen={false} summary="DONKI · CME · Flares">
-            <SpaceWeatherCard />
-          </CollapsibleSection>
-        </aside>
-
-        {/* Right side — atmosphere + filter + live feed */}
-        <div style={{ position: 'absolute', right: 48, top: 112, bottom: 80, width: 320, display: 'flex', flexDirection: 'column', gap: 12, pointerEvents: 'auto' }}>
-          <AtmosphericCard />
-          <div style={{ padding: '12px 14px', borderRadius: 12, ...GLASS }}>
-            <FilterBar />
-          </div>
-          <div style={{ flex: 1, minHeight: 0, padding: 16, borderRadius: 16, ...GLASS, display: 'flex', flexDirection: 'column' }}>
-            <LiveFeed />
-          </div>
+        {/* Tab bar — under header */}
+        <div style={{ position: 'absolute', top: 88, left: 48, pointerEvents: 'auto' }}>
+          <TabBar active={tab} onChange={setTab} anomalyCount={anomalies.length} />
         </div>
+
+        {/* ===== LIVE TAB ===== */}
+        {tab === 'live' && (
+          <>
+            {/* Left panel — charts + monitoring */}
+            <aside style={{ position: 'absolute', left: 48, top: 144, bottom: 80, width: 320, display: 'flex', flexDirection: 'column', gap: 12, overflowY: 'auto', pointerEvents: 'auto' }}>
+              <SeismicChart />
+              <SolarWindChart />
+              <GoesChart />
+              <CollapsibleSection title="Solar Monitoring" defaultOpen={false} summary="Solar Wind · GOES">
+                <SolarWindCard />
+                <GoesCard />
+              </CollapsibleSection>
+              <CollapsibleSection title="Space Alerts" defaultOpen={false} summary="DONKI · CME · Flares">
+                <SpaceWeatherCard />
+              </CollapsibleSection>
+            </aside>
+
+            {/* Right side — atmosphere + filter + live feed */}
+            <div style={{ position: 'absolute', right: 48, top: 144, bottom: 80, width: 320, display: 'flex', flexDirection: 'column', gap: 12, pointerEvents: 'auto' }}>
+              <AtmosphericCard />
+              <div style={{ padding: '12px 14px', borderRadius: 12, ...GLASS }}>
+                <FilterBar />
+              </div>
+              <div style={{ flex: 1, minHeight: 0, padding: 16, borderRadius: 16, ...GLASS, display: 'flex', flexDirection: 'column' }}>
+                <LiveFeed />
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* ===== INTELLIGENCE TAB ===== */}
+        {tab === 'intelligence' && (
+          <>
+            {/* Left — activity + anomaly feed */}
+            <aside style={{ position: 'absolute', left: 48, top: 144, bottom: 80, width: 360, display: 'flex', flexDirection: 'column', gap: 12, overflowY: 'auto', pointerEvents: 'auto' }}>
+              <ActivityPanel activity={activity} />
+              <AnomalyFeed anomalies={anomalies} />
+            </aside>
+
+            {/* Right — correlations + live feed */}
+            <div style={{ position: 'absolute', right: 48, top: 144, bottom: 80, width: 360, display: 'flex', flexDirection: 'column', gap: 12, pointerEvents: 'auto' }}>
+              <CorrelationList />
+              <div style={{ flex: 1, minHeight: 0, padding: 16, borderRadius: 16, ...GLASS, display: 'flex', flexDirection: 'column' }}>
+                <LiveFeed />
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* ===== DATA TAB ===== */}
+        {tab === 'data' && (
+          <>
+            {/* Left — raw cards */}
+            <aside style={{ position: 'absolute', left: 48, top: 144, bottom: 80, width: 360, display: 'flex', flexDirection: 'column', gap: 12, overflowY: 'auto', pointerEvents: 'auto' }}>
+              <AtmosphericCard />
+              <SolarWindCard />
+              <GoesCard />
+            </aside>
+
+            {/* Right — space weather + filter + live feed */}
+            <div style={{ position: 'absolute', right: 48, top: 144, bottom: 80, width: 360, display: 'flex', flexDirection: 'column', gap: 12, pointerEvents: 'auto' }}>
+              <SpaceWeatherCard />
+              <div style={{ padding: '12px 14px', borderRadius: 12, ...GLASS }}>
+                <FilterBar />
+              </div>
+              <div style={{ flex: 1, minHeight: 0, padding: 16, borderRadius: 16, ...GLASS, display: 'flex', flexDirection: 'column' }}>
+                <LiveFeed />
+              </div>
+            </div>
+          </>
+        )}
 
         {/* Timeline */}
         <TimelineSlider />

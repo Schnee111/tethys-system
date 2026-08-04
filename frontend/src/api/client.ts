@@ -269,6 +269,14 @@ export const api = {
       return { activity_level: "unknown", activity_score: 0 };
     }
   },
+  getCorrelations: async (params?: { hours?: number; significant_only?: boolean }) => {
+    try {
+      const { data } = await client.get('/api/v1/correlations', { params });
+      return { count: data.count, correlations: (data.correlations || []) };
+    } catch {
+      return { count: 0, correlations: [] };
+    }
+  },
   getSolarWindLatest: async () => {
     try {
       return await client.get('/api/v1/solar-wind/latest').then(r => r.data);
