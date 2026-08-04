@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Install Python deps
 COPY pyproject.toml .
 COPY backend/ backend/
-RUN pip install --no-cache-dir -e .
+RUN pip install --no-cache-dir --pre -e .
 
 # Copy frontend build (serve static from FastAPI)
 COPY frontend/dist/ static/
