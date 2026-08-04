@@ -27,6 +27,18 @@ DETECTION_MATRIX = [
     ("atmospheric_daily", "avg_temp", "atmospheric", 50),
 ]
 
+# Table → time column name
+# Raw hypertables use `time`; continuous aggregates rename it to `hour`/`day`.
+TABLE_TIME_COLUMN = {
+    "seismic_events": "time",
+    "solar_wind": "time",
+    "goes_flux": "time",
+    "atmospheric_data": "time",
+    "solar_wind_hourly": "hour",
+    "goes_flux_hourly": "hour",
+    "atmospheric_daily": "day",
+}
+
 # SQL injection prevention
 ALLOWED_TABLES = {
     "seismic_events",
@@ -76,10 +88,11 @@ class ZScoreDetector:
             raise ValueError(f"Metric '{metric}' not in allowlist")
 
         async with pool.acquire() as conn:
+            time_col = TABLE_TIME_COLUMN.get(table, "time")
             rows = await conn.fetch(
-                f"SELECT time, {metric} FROM {table} "
-                f"WHERE time > NOW() - make_interval(hours => $1) "
-                f"ORDER BY time",
+                f"SELECT {time_col} AS time, {metric} FROM {table} "
+                f"WHERE {time_col} > NOW() - make_interval(hours => $1) "
+                f"ORDER BY {time_col}",
                 self.window_hours,
             )
 
