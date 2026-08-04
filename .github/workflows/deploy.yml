@@ -41,5 +41,5 @@ jobs:
             sudo docker compose -f docker-compose.prod.yml up -d --build
             sudo rsync -av --delete ~/Storage/Projects/tethys/frontend/dist/ /var/www/tethys/
             # Prune old build artifacts to prevent disk exhaustion
-            sudo docker image prune -f --filter "until=48h" --filter "label=com.docker.compose.project=tethys" 2>/dev/null || true
+            sudo docker image prune -f --filter "dangling=true" 2>/dev/null || true
             sudo docker builder prune -f --keep-storage=2g 2>/dev/null || true
