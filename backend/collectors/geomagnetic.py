@@ -13,9 +13,9 @@ from backend.collectors.base import BaseCollector
 logger = logging.getLogger(__name__)
 
 # NOAA SWPC geomagnetic indices endpoints
+# NOTE: AE (planetary_a_index.json) removed by NOAA (404). Kp + Dst suffice for storm classification.
 KP_ENDPOINT = "https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json"
 DST_ENDPOINT = "https://services.swpc.noaa.gov/products/kyoto-dst.json"
-AE_ENDPOINT = "https://services.swpc.noaa.gov/products/planetary_a_index.json"
 
 
 def _classify_kp(kp: float) -> str:
@@ -76,7 +76,6 @@ class GeomagneticCollector(BaseCollector):
         self.endpoints = {
             "kp": KP_ENDPOINT,
             "dst": DST_ENDPOINT,
-            "ae": AE_ENDPOINT,
         }
 
     async def collect(self) -> list[dict[str, Any]]:
@@ -98,14 +97,6 @@ class GeomagneticCollector(BaseCollector):
                 all_records.extend(self._parse_dst(dst_data))
         except Exception as e:
             logger.error(f"Failed to fetch Dst index: {e}")
-
-        # Fetch AE index
-        try:
-            ae_data = await self.fetch_json(self.endpoints["ae"])
-            if isinstance(ae_data, list):
-                all_records.extend(self._parse_ae(ae_data))
-        except Exception as e:
-            logger.error(f"Failed to fetch AE index: {e}")
 
         return all_records
 
@@ -168,35 +159,6 @@ class GeomagneticCollector(BaseCollector):
                 })
             except (ValueError, TypeError) as e:
                 logger.warning(f"Failed to parse Dst record: {e}")
-                continue
-
-        return records
-
-    def _parse_ae(self, data: list[dict]) -> list[dict]:
-        """Parse AE index data (JSON format)."""
-        records = []
-
-        for item in data:
-            try:
-                time_str = item.get("time_tag")
-                if not time_str:
-                    continue
-
-                # Ensure timezone-aware datetime
-                time = datetime.fromisoformat(time_str.replace("Z", "+00:00"))
-                if time.tzinfo is None:
-                    time = time.replace(tzinfo=UTC)
-                
-                ae_value = float(item.get("AE", 0))
-
-                records.append({
-                    "time": time,
-                    "index_type": "ae",
-                    "value": ae_value,
-                    "storm_level": None,  # AE doesn't have storm levels
-                })
-            except (ValueError, TypeError) as e:
-                logger.warning(f"Failed to parse AE record: {e}")
                 continue
 
         return records
