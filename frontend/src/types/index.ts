@@ -49,6 +49,26 @@ export interface ActivityAssessment {
   summary: string;
 }
 
+export interface Correlation {
+  time: string;
+  correlation_id: string;
+  domain_a: string;
+  metric_a: string;
+  domain_b: string;
+  metric_b: string;
+  window_hours: number;
+  lag_hours: number;
+  pearson_r: number;
+  spearman_rho: number;
+  p_value: number;
+  p_value_corrected: number | null;
+  fdr_method: string | null;
+  sample_size: number;
+  is_significant: boolean;
+  granger_p: number | null;
+  granger_causal: boolean | null;
+}
+
 export interface SystemStatus {
   status: string;
   version: string;
