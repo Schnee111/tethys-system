@@ -65,7 +65,7 @@ async def _run_advanced_correlation(pool: asyncpg.Pool, correlator: CorrelationE
 
 
 async def run_analysis_cycle(pool: asyncpg.Pool, detector: ZScoreDetector) -> None:
-    """Run one anomaly detection + activity assessment cycle."""
+    """Run one anomaly detection + activity assessment + lament check cycle."""
     # Detect anomalies
     anomalies = await detector.detect_all(pool)
     if anomalies:
@@ -77,6 +77,21 @@ async def run_analysis_cycle(pool: asyncpg.Pool, detector: ZScoreDetector) -> No
     assessment = await assessor.assess(pool)
     await store_assessment(pool, assessment)
     logger.info(f"Activity: {assessment['activity_level']} (score={assessment['activity_score']})")
+
+    # Lament detection (cascade check) — only if anomalies present
+    if anomalies and assessment.get("active_anomalies", 0) > 0:
+        from backend.analysis.lament_detector import detect_lament
+
+        try:
+            lament = await detect_lament(pool, assessment, anomalies)
+            if lament:
+                logger.warning(
+                    f"LAMENT: {lament['domains']} "
+                    f"(score={lament['activity_score']:.2f}, "
+                    f"times_seen={lament['times_seen']})"
+                )
+        except Exception as e:
+            logger.debug(f"Lament detection skipped: {e}")
 
 
 async def analysis_scheduler(pool: asyncpg.Pool) -> None:
