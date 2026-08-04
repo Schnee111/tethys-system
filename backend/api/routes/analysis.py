@@ -101,3 +101,16 @@ async def get_activity():
         )
 
     return dict(row) if row else {"activity_level": "unknown", "activity_score": 0}
+
+
+@router.get("/api/v1/narrative")
+async def get_narrative():
+    """Generate a natural-language description of current planetary state.
+
+    Template-based (deterministic). Returns text + metadata.
+    """
+    from backend.analysis.narrative import generate_narrative
+
+    pool = await get_pool()
+    result = await generate_narrative(pool)
+    return result
