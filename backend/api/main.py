@@ -25,12 +25,12 @@ from backend.collectors.goes_flux import GOESFluxCollector
 from backend.collectors.geomagnetic import GeomagneticCollector
 from backend.collectors.gravity_field import GravityFieldCollector
 from backend.collectors.ionospheric import IonosphericCollector
-from backend.collectors.lightning import LightningCollector
 from backend.collectors.ocean_indices import OceanIndicesCollector
 from backend.collectors.seismic import SeismicCollector
 from backend.collectors.solar_wind import SolarWindCollector
 from backend.collectors.tsunami_warning import TsunamiWarningCollector
 from backend.collectors.volcanic import VolcanicCollector
+from backend.analysis.scheduler import analysis_scheduler
 from backend.config import DATABASE_URL, TETHYS_ENV
 from backend.db.connection import close_pool, get_pool, init_pool
 from backend.db.schema import create_tables
@@ -79,7 +79,6 @@ async def lifespan(app: FastAPI):
         GeomagneticCollector(pool),
         CosmicRayCollector(pool),
         IonosphericCollector(pool),
-        LightningCollector(pool),
         OceanIndicesCollector(pool),
         GravityFieldCollector(pool),
         TsunamiWarningCollector(pool),
@@ -87,13 +86,19 @@ async def lifespan(app: FastAPI):
     collector_tasks = [asyncio.create_task(c.run()) for c in collectors]
     logger.info(f"Started {len(collectors)} collectors in API server process")
 
+    # Start analysis scheduler (anomaly detection, correlations, activity)
+    # NOTE: LightningCollector & AE index removed — upstream dead (WWLLN DNS NXDOMAIN, NOAA dropped planetary_a_index.json)
+    analysis_task = asyncio.create_task(analysis_scheduler(pool))
+    logger.info("Started analysis scheduler (anomaly/correlation/activity)")
+
     yield
 
     # Shutdown
     heartbeat_task.cancel()
     for task in collector_tasks:
         task.cancel()
-    await asyncio.gather(heartbeat_task, *collector_tasks, return_exceptions=True)
+    analysis_task.cancel()
+    await asyncio.gather(heartbeat_task, *collector_tasks, analysis_task, return_exceptions=True)
     set_broadcast_callback(None)
     await close_pool()
 
