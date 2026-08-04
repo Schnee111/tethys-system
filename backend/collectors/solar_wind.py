@@ -47,16 +47,25 @@ MAG_INSERT_QUERY = COMBINED_INSERT_QUERY
 
 
 def _safe_float(value: str | float | None) -> float | None:
-    """Parse a value to float, returning None for empty or invalid values."""
+    """Parse a value to float, returning None for empty, invalid, or missing-sentinel values.
+
+    NOAA/DSCVR uses -9999 (and variants) as missing-data sentinels. Treating
+    them as real values poisons aggregates (e.g. avg_density = -841) and
+    triggers false anomalies in MAD Z-score detection.
+    """
     if value is None:
         return None
     value = str(value).strip()
     if not value or value.lower() in ("null", "none", "nan", ""):
         return None
     try:
-        return float(value)
+        f = float(value)
     except (ValueError, TypeError):
         return None
+    # Missing-data sentinels used by SWPC/NCEI
+    if f <= -999:
+        return None
+    return f
 
 
 def _parse_combined_response(raw: list[list]) -> list[dict]:

@@ -110,9 +110,9 @@ def wavelet_coherence(
             "period": period,
             "coi": coi,
             "significant": significant,
-            "max_coherence": float(np.nanmax(coherence)),
+            "max_coherence": float(np.nanmax(np.real(coherence))),
             "dominant_period": float(period[dominant_idx]),
-            "dominant_coherence": float(mean_coherence[dominant_idx]),
+            "dominant_coherence": float(np.real(mean_coherence[dominant_idx])),
         }
 
     except Exception as e:

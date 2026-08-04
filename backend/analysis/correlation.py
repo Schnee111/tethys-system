@@ -243,6 +243,117 @@ class CorrelationEngine:
 
         return [r for r in results if r["is_significant"]]
 
+    async def compute_transfer_entropy(
+        self,
+        pool: asyncpg.Pool,
+        domain_a: str,
+        metric_a: str,
+        domain_b: str,
+        metric_b: str,
+        window_hours: int,
+    ) -> dict | None:
+        """Compute Transfer Entropy between two metrics (nonlinear causality).
+
+        Transfer Entropy measures directed information flow from X to Y:
+        TE(X→Y) > TE(Y→X) indicates information flows from X to Y.
+        Unlike Granger causality (linear), TE captures nonlinear coupling.
+        """
+        from backend.analysis.transfer_entropy import compute_te_both_directions
+
+        # Fetch aligned time series (same window, no lag)
+        data_a = await self._query_metric(pool, domain_a, metric_a, window_hours, 0)
+        data_b = await self._query_metric(pool, domain_b, metric_b, window_hours, 0)
+
+        if not data_a or not data_b:
+            return None
+
+        # Align by timestamp
+        common_times = sorted(set(data_a.keys()) & set(data_b.keys()))
+        if len(common_times) < 50:  # TE needs more data than correlation
+            return None
+
+        values_a = np.array([data_a[t] for t in common_times])
+        values_b = np.array([data_b[t] for t in common_times])
+
+        # Sanitize
+        valid = np.isfinite(values_a) & np.isfinite(values_b)
+        values_a = values_a[valid]
+        values_b = values_b[valid]
+
+        if len(values_a) < 50 or np.std(values_a) == 0 or np.std(values_b) == 0:
+            return None
+
+        try:
+            result = compute_te_both_directions(values_a, values_b)
+            result.update({
+                "domain_a": domain_a,
+                "metric_a": metric_a,
+                "domain_b": domain_b,
+                "metric_b": metric_b,
+                "window_hours": window_hours,
+                "sample_size": len(values_a),
+            })
+            return result
+        except Exception as e:
+            logger.warning(f"Transfer entropy failed for {domain_a}/{metric_a} → {domain_b}/{metric_b}: {e}")
+            return None
+
+    async def compute_wavelet_coherence(
+        self,
+        pool: asyncpg.Pool,
+        domain_a: str,
+        metric_a: str,
+        domain_b: str,
+        metric_b: str,
+        window_hours: int,
+    ) -> dict | None:
+        """Compute Wavelet Coherence (time-frequency resolved correlation).
+
+        Shows if correlation exists at specific periodicities and how it changes
+        over time. Addresses non-stationarity more elegantly than differencing.
+        """
+        from backend.analysis.wavelet import wavelet_coherence
+
+        # Fetch aligned time series
+        data_a = await self._query_metric(pool, domain_a, metric_a, window_hours, 0)
+        data_b = await self._query_metric(pool, domain_b, metric_b, window_hours, 0)
+
+        if not data_a or not data_b:
+            return None
+
+        # Align by timestamp
+        common_times = sorted(set(data_a.keys()) & set(data_b.keys()))
+        if len(common_times) < 20:
+            return None
+
+        values_a = np.array([data_a[t] for t in common_times])
+        values_b = np.array([data_b[t] for t in common_times])
+
+        # Sanitize
+        valid = np.isfinite(values_a) & np.isfinite(values_b)
+        values_a = values_a[valid]
+        values_b = values_b[valid]
+
+        if len(values_a) < 20 or np.std(values_a) == 0 or np.std(values_b) == 0:
+            return None
+
+        try:
+            result = wavelet_coherence(values_a, values_b)
+            if result is None:
+                return None
+            result.update({
+                "domain_a": domain_a,
+                "metric_a": metric_a,
+                "domain_b": domain_b,
+                "metric_b": metric_b,
+                "window_hours": window_hours,
+                "sample_size": len(values_a),
+            })
+            return result
+        except Exception as e:
+            logger.warning(f"Wavelet coherence failed for {domain_a}/{metric_a} → {domain_b}/{metric_b}: {e}")
+            return None
+
     async def _query_metric(
         self,
         pool: asyncpg.Pool,

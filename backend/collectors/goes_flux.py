@@ -62,6 +62,11 @@ class GOESFluxCollector(BaseCollector):
                     dt = time_tag  # already datetime
 
                 flux_val = float(item["flux"])
+                # NOAA uses -9999 as missing-data sentinel; skip (would poison
+                # avg_flux aggregates and trigger false anomalies)
+                if flux_val <= -999:
+                    logger.debug(f"goes_flux: skipping sentinel {flux_val} for {flux_type}")
+                    continue
                 energy_band = item["energy"]
                 satellite = item.get("satellite_tag", "goes-primary")
 
