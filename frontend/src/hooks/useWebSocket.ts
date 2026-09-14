@@ -485,6 +485,10 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
       setWsConnected(false);
       clearInterval(pingTimer.current);
 
+      if (useDataStore.getState().events.length === 0) {
+        generateMockData();
+      }
+
       // Auto-reconnect with exponential backoff
       if (isMounted.current && reconnectAttempt.current < maxReconnectAttempts) {
         const delay = Math.min(

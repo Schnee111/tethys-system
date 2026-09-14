@@ -38,8 +38,8 @@ jobs:
             cd ~/Storage/Projects/tethys
             git pull origin main
             cd frontend && npm ci && npm run build && cd ..
-            sudo docker compose -f docker-compose.prod.yml up -d --build
             sudo rsync -av --delete ~/Storage/Projects/tethys/frontend/dist/ /var/www/tethys/
-            # Prune old build artifacts to prevent disk exhaustion
-            sudo docker image prune -f --filter "dangling=true" 2>/dev/null || true
-            sudo docker builder prune -a -f --filter "until=24h" 2>/dev/null || true
+            # Docker compose skipped in demo mode to keep backend containers inactive
+            # sudo docker compose -f docker-compose.prod.yml up -d --build
+            # sudo docker image prune -f --filter "dangling=true" 2>/dev/null || true
+            # sudo docker builder prune -a -f --filter "until=24h" 2>/dev/null || true

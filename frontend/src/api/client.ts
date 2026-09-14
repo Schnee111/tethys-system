@@ -7,10 +7,16 @@ const client = axios.create({ baseURL: '', timeout: 10000 });
 client.interceptors.response.use(
   (response) => response,
   (error) => {
-    // If it's a network error (server is offline), return mock data for development
-    if (!error.response || error.code === 'ERR_NETWORK') {
-      const url = error.config.url || '';
-      console.warn(`[API Client] Connection to backend failed. Serving mock data for: ${url}`);
+    // Treat as offline if network error, no response, or backend returned 5xx / 404 (e.g. Nginx 502 Bad Gateway)
+    const isOffline =
+      !error.response ||
+      error.code === 'ERR_NETWORK' ||
+      error.code === 'ECONNABORTED' ||
+      (error.response && (error.response.status >= 500 || error.response.status === 404));
+
+    if (isOffline) {
+      const url = error.config?.url || '';
+      console.warn(`[API Client] Backend offline (${error.response?.status || error.code || 'network'}). Serving mock data for: ${url}`);
       
       const now = new Date();
       let mockData: any = null;
@@ -92,8 +98,16 @@ client.interceptors.response.use(
         };
       } else if (url.includes('/api/v1/activity')) {
         mockData = {
+          time: now.toISOString(),
+          assessment_id: "mock-assess-1",
           activity_level: "elevated",
-          activity_score: 64.2
+          activity_score: 0.65,
+          confidence: 0.88,
+          coverage: "global",
+          active_anomalies: 2,
+          active_correlations: 2,
+          domains_affected: ["seismic", "solar_wind"],
+          summary: "Elevated geomagnetic-lithospheric activity. Solar wind velocity spike to 650 km/s aligned with regional M7.2 Honshu subduction tremor."
         };
       } else if (url.includes('/api/v1/solar-wind/latest')) {
         mockData = {
@@ -181,6 +195,79 @@ client.interceptors.response.use(
             }
           ]
         };
+      } else if (url.includes('/api/v1/narrative')) {
+        mockData = {
+          text: "Planetary activity elevated. Elevated solar wind speed (650 km/s) and southward IMF deflection (Bz -2.4 nT) coincide with M7.2 seismic signature in Honshu. Cross-domain anomaly correlation indicates active magnetospheric-lithospheric coupling.",
+          narrative_type: "cascade_warning",
+          severity: "high",
+          timestamp: now.toISOString(),
+          activity_level: "elevated",
+          active_anomalies: 2,
+          domains_affected: ["seismic", "solar_wind"]
+        };
+      } else if (url.includes('/api/v1/correlations')) {
+        mockData = {
+          count: 3,
+          correlations: [
+            {
+              time: now.toISOString(),
+              correlation_id: "mock-corr-1",
+              domain_a: "solar_wind",
+              metric_a: "speed",
+              domain_b: "seismic",
+              metric_b: "magnitude",
+              window_hours: 168,
+              lag_hours: 18,
+              pearson_r: 0.742,
+              spearman_rho: 0.698,
+              p_value: 0.0012,
+              p_value_corrected: 0.0048,
+              fdr_method: "Benjamini-Yekutieli",
+              sample_size: 144,
+              is_significant: true,
+              granger_p: 0.008,
+              granger_causal: true
+            },
+            {
+              time: new Date(now.getTime() - 3600000).toISOString(),
+              correlation_id: "mock-corr-2",
+              domain_a: "solar_wind",
+              metric_a: "bz_gsm",
+              domain_b: "goes",
+              metric_b: "flux",
+              window_hours: 72,
+              lag_hours: 6,
+              pearson_r: -0.684,
+              spearman_rho: -0.642,
+              p_value: 0.0034,
+              p_value_corrected: 0.0092,
+              fdr_method: "Benjamini-Yekutieli",
+              sample_size: 144,
+              is_significant: true,
+              granger_p: 0.015,
+              granger_causal: true
+            },
+            {
+              time: new Date(now.getTime() - 7200000).toISOString(),
+              correlation_id: "mock-corr-3",
+              domain_a: "atmospheric",
+              metric_a: "pressure",
+              domain_b: "seismic",
+              metric_b: "magnitude",
+              window_hours: 168,
+              lag_hours: 24,
+              pearson_r: 0.418,
+              spearman_rho: 0.385,
+              p_value: 0.048,
+              p_value_corrected: null,
+              fdr_method: null,
+              sample_size: 96,
+              is_significant: false,
+              granger_p: null,
+              granger_causal: false
+            }
+          ]
+        };
       }
 
       if (mockData) {
@@ -243,7 +330,26 @@ export const api = {
     try {
       return await client.get('/api/v1/status').then(r => r.data);
     } catch {
-      return { active_alerts: 0, systems_online: 0, network_load: 0, last_updated: new Date().toISOString() };
+      const now = new Date();
+      return {
+        status: "offline_mock",
+        version: "0.1.0-mock",
+        uptime_seconds: 3600,
+        environment: "development",
+        collectors: {
+          seismic: { status: "ok", last_poll: now.toISOString(), records: 40, latency_ms: 120, error: null },
+          solar_wind: { status: "ok", last_poll: now.toISOString(), records: 100, latency_ms: 80, error: null },
+          goes: { status: "ok", last_poll: now.toISOString(), records: 50, latency_ms: 90, error: null },
+          atmospheric: { status: "ok", last_poll: now.toISOString(), records: 15, latency_ms: 110, error: null },
+          volcanic: { status: "ok", last_poll: now.toISOString(), records: 5, latency_ms: 95, error: null },
+          space_weather: { status: "ok", last_poll: now.toISOString(), records: 8, latency_ms: 105, error: null }
+        },
+        database: {
+          tables: { seismic_events: 40, solar_wind: 100, goes_flux: 50, atmospheric_data: 15 },
+          total_records: 205,
+          size: "1.4 MB"
+        }
+      };
     }
   },
   getSeismic: async (params?: { hours?: number; min_mag?: number; limit?: number }) => {
@@ -251,7 +357,40 @@ export const api = {
       const { data } = await client.get('/api/v1/events/seismic', { params });
       return { count: data.count, events: (data.events || []).map(transformSeismic) };
     } catch {
-      return { count: 0, events: [] };
+      const now = new Date();
+      return {
+        count: 2,
+        events: [
+          transformSeismic({
+            time: new Date(now.getTime() - 15 * 60000).toISOString(),
+            event_id: "mock-seismic-api-1",
+            magnitude: 5.8,
+            latitude: 35.6762,
+            longitude: 139.6503,
+            depth_km: 24.5,
+            place: "Honshu, Japan",
+            type: "earthquake",
+            sig: 580,
+            felt: 42,
+            alert: "green",
+            tsunami: 0
+          }),
+          transformSeismic({
+            time: new Date(now.getTime() - 45 * 60000).toISOString(),
+            event_id: "mock-seismic-api-2",
+            magnitude: 6.2,
+            latitude: -18.232,
+            longitude: -178.118,
+            depth_km: 560.1,
+            place: "Fiji Region",
+            type: "earthquake",
+            sig: 620,
+            felt: 0,
+            alert: "yellow",
+            tsunami: 0
+          })
+        ]
+      };
     }
   },
   getAnomalies: async (params?: { hours?: number; domain?: string; severity?: string }) => {
@@ -259,21 +398,63 @@ export const api = {
       const { data } = await client.get('/api/v1/anomalies', { params });
       return { count: data.count, anomalies: (data.anomalies || []).map(transformAnomaly) };
     } catch {
-      return { count: 0, anomalies: [] };
+      const now = new Date();
+      return {
+        count: 2,
+        anomalies: [
+          transformAnomaly({
+            time: now.toISOString(),
+            anomaly_id: "mock-anom-1",
+            domain: "seismic",
+            metric: "magnitude",
+            value: 7.2,
+            z_score: 4.8,
+            severity: "high"
+          }),
+          transformAnomaly({
+            time: new Date(now.getTime() - 2 * 3600000).toISOString(),
+            anomaly_id: "mock-anom-2",
+            domain: "solar_wind",
+            metric: "speed",
+            value: 650,
+            z_score: 3.9,
+            severity: "medium"
+          })
+        ]
+      };
     }
   },
   getActivity: async () => {
     try {
       return await client.get('/api/v1/activity').then(r => r.data);
     } catch {
-      return { activity_level: "unknown", activity_score: 0 };
+      return {
+        time: new Date().toISOString(),
+        assessment_id: "mock-assess-1",
+        activity_level: "elevated",
+        activity_score: 0.65,
+        confidence: 0.88,
+        coverage: "global",
+        active_anomalies: 2,
+        active_correlations: 2,
+        domains_affected: ["seismic", "solar_wind"],
+        summary: "Elevated geomagnetic-lithospheric activity. Solar wind velocity spike to 650 km/s aligned with regional M7.2 Honshu subduction tremor."
+      };
     }
   },
   getNarrative: async () => {
     try {
       return await client.get('/api/v1/narrative').then(r => r.data);
     } catch {
-      return { text: "", narrative_type: "unknown", severity: "low" };
+      return {
+        text: "Planetary activity elevated. Elevated solar wind speed (650 km/s) and southward IMF deflection (Bz -2.4 nT) coincide with M7.2 seismic signature in Honshu. Cross-domain anomaly correlation indicates active magnetospheric-lithospheric coupling.",
+        narrative_type: "cascade_warning",
+        severity: "high",
+        timestamp: new Date().toISOString(),
+        activity_level: "elevated",
+        active_anomalies: 2,
+        domains_affected: ["seismic", "solar_wind"]
+      };
     }
   },
   getCorrelations: async (params?: { hours?: number; significant_only?: boolean }) => {
@@ -281,49 +462,185 @@ export const api = {
       const { data } = await client.get('/api/v1/correlations', { params });
       return { count: data.count, correlations: (data.correlations || []) };
     } catch {
-      return { count: 0, correlations: [] };
+      const now = new Date();
+      return {
+        count: 3,
+        correlations: [
+          {
+            time: now.toISOString(),
+            correlation_id: "mock-corr-1",
+            domain_a: "solar_wind",
+            metric_a: "speed",
+            domain_b: "seismic",
+            metric_b: "magnitude",
+            window_hours: 168,
+            lag_hours: 18,
+            pearson_r: 0.742,
+            spearman_rho: 0.698,
+            p_value: 0.0012,
+            p_value_corrected: 0.0048,
+            fdr_method: "Benjamini-Yekutieli",
+            sample_size: 144,
+            is_significant: true,
+            granger_p: 0.008,
+            granger_causal: true
+          },
+          {
+            time: new Date(now.getTime() - 3600000).toISOString(),
+            correlation_id: "mock-corr-2",
+            domain_a: "solar_wind",
+            metric_a: "bz_gsm",
+            domain_b: "goes",
+            metric_b: "flux",
+            window_hours: 72,
+            lag_hours: 6,
+            pearson_r: -0.684,
+            spearman_rho: -0.642,
+            p_value: 0.0034,
+            p_value_corrected: 0.0092,
+            fdr_method: "Benjamini-Yekutieli",
+            sample_size: 144,
+            is_significant: true,
+            granger_p: 0.015,
+            granger_causal: true
+          },
+          {
+            time: new Date(now.getTime() - 7200000).toISOString(),
+            correlation_id: "mock-corr-3",
+            domain_a: "atmospheric",
+            metric_a: "pressure",
+            domain_b: "seismic",
+            metric_b: "magnitude",
+            window_hours: 168,
+            lag_hours: 24,
+            pearson_r: 0.418,
+            spearman_rho: 0.385,
+            p_value: 0.048,
+            p_value_corrected: null,
+            fdr_method: null,
+            sample_size: 96,
+            is_significant: false,
+            granger_p: null,
+            granger_causal: false
+          }
+        ]
+      };
     }
   },
   getSolarWindLatest: async () => {
     try {
       return await client.get('/api/v1/solar-wind/latest').then(r => r.data);
     } catch {
-      return { speed: 0, density: 0, temperature: 0, bz_gsm: 0, bt: 0 };
+      return { speed: 485.2, density: 6.8, temperature: 85000.0, bz_gsm: -2.4, bt: 7.5 };
     }
   },
   getSolarWindHistory: async (params?: { hours?: number }) => {
     try {
       return await client.get('/api/v1/solar-wind/history', { params }).then(r => r.data);
     } catch {
-      return [];
+      const now = new Date();
+      const mockHistory = [];
+      for (let i = 0; i < 20; i++) {
+        mockHistory.push({
+          time: new Date(now.getTime() - i * 30 * 60 * 1000).toISOString(),
+          speed: 400 + Math.random() * 150,
+          density: 5 + Math.random() * 5
+        });
+      }
+      return mockHistory;
     }
   },
   getGoesXray: async (params?: { hours?: number }) => {
     try {
       return await client.get('/api/v1/goes/xray', { params }).then(r => r.data);
     } catch {
-      return { count: 0, readings: [] };
+      const now = new Date();
+      return {
+        count: 5,
+        readings: [
+          {
+            time: now.toISOString(),
+            flux_type: "xray",
+            energy_band: "0.1-0.8nm",
+            flux: 1.8e-6,
+            satellite: "goes-16"
+          },
+          {
+            time: new Date(now.getTime() - 10 * 60000).toISOString(),
+            flux_type: "xray",
+            energy_band: "0.05-0.4nm",
+            flux: 2.4e-7,
+            satellite: "goes-16"
+          }
+        ]
+      };
     }
   },
   getVolcanic: async () => {
     try {
       return await client.get('/api/v1/volcanic').then(r => r.data);
     } catch {
-      return { count: 0, events: [] };
+      const now = new Date();
+      return {
+        count: 1,
+        events: [
+          {
+            time: new Date(now.getTime() - 3 * 3600 * 1000).toISOString(),
+            event_id: "mock-volc-api-1",
+            volcano_name: "Mount Etna, Italy",
+            latitude: 37.75,
+            longitude: 15.00,
+            description: "Ash plume rising to 12,000 ft. Strombolian activity continues at Southeast Crater.",
+            elevation_m: 3326,
+            vei: 2,
+            link: "https://volcano.si.edu/"
+          }
+        ]
+      };
     }
   },
   getAtmospheric: async (params?: { hours?: number }) => {
     try {
       return await client.get('/api/v1/atmospheric', { params }).then(r => r.data);
     } catch {
-      return { count: 0, readings: [] };
+      const now = new Date();
+      return {
+        count: 5,
+        readings: [
+          { time: now.toISOString(), location_name: "Tokyo, Japan", latitude: 35.6762, longitude: 139.6503, category: "temperature", temperature: 24.5, temp_min: 18.0, precipitation: 0, wind_speed: 4.2, wind_dir: 180 },
+          { time: now.toISOString(), location_name: "Reykjavik, Iceland", latitude: 64.1466, longitude: -21.9426, category: "temperature", temperature: 11.2, temp_min: 8.0, precipitation: 1.2, wind_speed: 8.5, wind_dir: 90 },
+          { time: now.toISOString(), location_name: "Naples, Italy", latitude: 40.8518, longitude: 14.2681, category: "temperature", temperature: 28.1, temp_min: 22.0, precipitation: 0, wind_speed: 3.1, wind_dir: 240 },
+          { time: now.toISOString(), location_name: "Honolulu, Hawaii", latitude: 21.3069, longitude: -157.8583, category: "temperature", temperature: 27.8, temp_min: 24.0, precipitation: 0.5, wind_speed: 6.7, wind_dir: 70 },
+          { time: now.toISOString(), location_name: "Valparaíso, Chile", latitude: -33.0472, longitude: -71.6127, category: "temperature", temperature: 14.2, temp_min: 10.0, precipitation: 0, wind_speed: 5.4, wind_dir: 210 }
+        ]
+      };
     }
   },
   getSpaceWeather: async () => {
     try {
       return await client.get('/api/v1/space-weather').then(r => r.data);
     } catch {
-      return { events: [] };
+      const now = new Date();
+      return {
+        events: [
+          {
+            time: new Date(now.getTime() - 2 * 3600000).toISOString(),
+            event_id: "mock-cme-api-1",
+            event_type: "CME",
+            source: "LASCO C2",
+            description: "Halo Coronal Mass Ejection detected. Speed: 820 km/s. Earth-directed component under analysis.",
+            link: "https://kauai.ccmc.gsfc.nasa.gov/DONKI/"
+          },
+          {
+            time: new Date(now.getTime() - 5 * 3600000).toISOString(),
+            event_id: "mock-flare-api-1",
+            event_type: "FLARE",
+            source: "GOES-16",
+            description: "M3.4 Solar Flare erupted from Active Region 3285. Associated with minor radio blackout.",
+            link: "https://kauai.ccmc.gsfc.nasa.gov/DONKI/"
+          }
+        ]
+      };
     }
   },
 };
