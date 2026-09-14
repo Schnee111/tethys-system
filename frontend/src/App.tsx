@@ -73,10 +73,10 @@ export default function App() {
             <h1 style={{ fontSize: '1.5rem', fontWeight: 300, letterSpacing: '0.35em', color: '#fff', textTransform: 'uppercase', margin: 0 }}>
               TETHYS
             </h1>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: isConnected ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', padding: '2px 10px', borderRadius: 9999 }}>
-              <div style={{ width: 6, height: 6, borderRadius: '50%', background: isConnected ? '#4ade80' : '#ef4444', boxShadow: `0 0 10px ${isConnected ? 'rgba(74,222,128,0.5)' : 'rgba(239,68,68,0.5)'}` }} />
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.1em', color: isConnected ? '#4ade80' : '#ef4444', textTransform: 'uppercase', fontWeight: 600 }}>
-                {isConnected ? 'LIVE' : 'OFFLINE'}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: isConnected ? 'rgba(16,185,129,0.1)' : 'rgba(56,189,248,0.12)', padding: '2px 10px', borderRadius: 9999 }}>
+              <div style={{ width: 6, height: 6, borderRadius: '50%', background: isConnected ? '#4ade80' : '#38bdf8', boxShadow: `0 0 10px ${isConnected ? 'rgba(74,222,128,0.5)' : 'rgba(56,189,248,0.5)'}` }} />
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.1em', color: isConnected ? '#4ade80' : '#38bdf8', textTransform: 'uppercase', fontWeight: 600 }}>
+                {isConnected ? 'LIVE' : 'DEMO SIMULATION'}
               </span>
               {!isConnected && (
                 <button
@@ -121,9 +121,9 @@ export default function App() {
             OPERATOR: Shorekeeper
           </span>
           {isConnected ? (
-            <Wifi style={{ width: 16, height: 16, color: '#34d399' }} />
+            <span title="Live Telemetry Connected" style={{ display: 'flex' }}><Wifi style={{ width: 16, height: 16, color: '#34d399' }} /></span>
           ) : (
-            <WifiOff style={{ width: 16, height: 16, color: '#ef4444' }} />
+            <span title="Demo Simulation Telemetry" style={{ display: 'flex' }}><Wifi style={{ width: 16, height: 16, color: '#38bdf8' }} /></span>
           )}
           <div style={{ position: 'relative' }}>
             <Bell style={{ width: 16, height: 16, color: '#71717a' }} />
